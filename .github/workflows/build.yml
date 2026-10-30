@@ -14,6 +14,7 @@ jobs:
         with: { submodules: recursive }
       - uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: 21 }
+      - uses: gradle/actions/setup-gradle@v4
       - name: Install SDK and NDK
         run: |
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null || true
@@ -23,22 +24,40 @@ jobs:
       - name: Rebrand to TrustedGram
         run: |
           set -e
-          APPID="app.trustedgram.x"
           BV=TMessagesProj/src/main/java/org/telegram/messenger/BuildVars.java
           sed -i -E "s/(APP_ID\s*=\s*)[0-9]+;/\1${API_ID};/" $BV
           sed -i -E "s/(APP_HASH\s*=\s*)\"[^\"]*\";/\1\"${API_HASH}\";/" $BV
           sed -i -E 's#(<string name="AppName">)[^<]*(</string>)#\1TrustedGram\2#' TMessagesProj/src/main/res/values/strings.xml
-          grep -rl --include=build.gradle applicationId . | xargs sed -i -E "s/(applicationId\s*=?\s*)\"org\.telegram\.messenger[^\"]*\"/\1\"${APPID}\"/"
-          find . -name google-services.json -exec sed -i -E "s/\"package_name\": *\"org\.telegram\.messenger[^\"]*\"/\"package_name\": \"${APPID}\"/" {} +
+          python3 - <<'PY'
+          import re, glob, json
+          appid = "app.trustedgram.x"
+          pat = re.compile(r'''(applicationId\s*=?\s*)(["'])org\.telegram\.messenger([^"']*)(["'])''')
+          n = 0
+          for f in glob.glob('**/build.gradle', recursive=True) + glob.glob('**/build.gradle.kts', recursive=True):
+              s = open(f).read()
+              t = pat.sub(lambda m: m.group(1) + m.group(2) + appid + m.group(3) + m.group(4), s)
+              if t != s:
+                  open(f, 'w').write(t); n += 1; print('patched', f)
+          print('gradle files patched:', n)
+          for f in glob.glob('**/google-services.json', recursive=True):
+              d = json.load(open(f)); extra = []
+              for c in d.get('client', []):
+                  pn = c['client_info']['android_client_info']['package_name']
+                  if pn.startswith('org.telegram.messenger'):
+                      c2 = json.loads(json.dumps(c))
+                      c2['client_info']['android_client_info']['package_name'] = appid + pn[len('org.telegram.messenger'):]
+                      extra.append(c2)
+              d['client'] += extra
+              json.dump(d, open(f, 'w'), indent=2)
+              print('patched', f, [c['client_info']['android_client_info']['package_name'] for c in d['client']])
+          PY
           grep -n "APP_ID" $BV
-          grep -rn --include=build.gradle applicationId . | head
+          grep -rn --include=*.gradle -E "applicationId" . | head -30
       - name: List build tasks
         continue-on-error: true
         run: ./gradlew :TMessagesProj_App:tasks --all | grep -i "^assemble" | head -40
       - name: Build APK
-        run: |
-          ./gradlew --no-daemon -Dorg.gradle.jvmargs=-Xmx6g :TMessagesProj_App:assembleAfatRelease || \
-          ./gradlew --no-daemon -Dorg.gradle.jvmargs=-Xmx6g :TMessagesProj_App:assembleAfatDebug
+        run: ./gradlew --no-daemon -Dorg.gradle.jvmargs=-Xmx6g :TMessagesProj_App:assembleAfatDebug
       - uses: actions/upload-artifact@v4
         with:
           name: TrustedGram-apk
