@@ -1,5 +1,7 @@
 name: Build TrustedGram
+
 on: workflow_dispatch
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -7,35 +9,62 @@ jobs:
     env:
       API_ID: ${{ secrets.API_ID }}
       API_HASH: ${{ secrets.API_HASH }}
+      APP_NAME: TrustedGram
+      APP_PACKAGE: app.trustedgram.x
     steps:
       - name: Free disk space
         run: sudo rm -rf /usr/share/dotnet /opt/ghc
+
       - uses: actions/checkout@v4
-        with: { submodules: recursive }
+        with:
+          submodules: recursive
+
       - uses: actions/setup-java@v4
-        with: { distribution: temurin, java-version: 21 }
+        with:
+          distribution: temurin
+          java-version: 21
+
       - uses: gradle/actions/setup-gradle@v4
+
       - name: Install SDK and NDK
         run: |
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null || true
           $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platforms;android-36" "build-tools;36.0.0" "ndk;27.2.12479018"
+
       - name: Check secrets
-        run: test -n "$API_ID" -a -n "$API_HASH" || { echo "API_ID or API_HASH secret missing"; exit 1; }
+        run: |
+          for v in API_ID API_HASH; do
+            if [ -z "${!v}" ]; then echo "Secret $v is missing"; exit 1; fi
+          done
+
       - name: Rebrand to TrustedGram
         run: |
           set -e
           BV=TMessagesProj/src/main/java/org/telegram/messenger/BuildVars.java
-          sed -i -E "s/(APP_ID\s*=\s*)[0-9]+;/\1${API_ID};/" $BV
-          sed -i -E "s/(APP_HASH\s*=\s*)\"[^\"]*\";/\1\"${API_HASH}\";/" $BV
-          sed -i -E 's#(<string name="AppName">)[^<]*(</string>)#\1TrustedGram\2#' TMessagesProj/src/main/res/values/strings.xml
+
+          sed -i -E "s/(APP_ID[[:space:]]*=[[:space:]]*)[0-9]+;/\1${API_ID};/" $BV
+          sed -i -E "s/(APP_HASH[[:space:]]*=[[:space:]]*)\"[^\"]*\";/\1\"${API_HASH}\";/" $BV
+
+          sed -i -E "s/(DEBUG_VERSION[[:space:]]*=[[:space:]]*)true;/\1false;/" $BV
+          sed -i -E "s/(DEBUG_PRIVATE_VERSION[[:space:]]*=[[:space:]]*)true;/\1false;/" $BV
+
+          find TMessagesProj TMessagesProj_App -name strings.xml -path "*/src/*" | while read f; do
+            sed -i -E "s#(<string name=\"AppName\"[^>]*>)[^<]*(</string>)#\1${APP_NAME}\2#" "$f"
+          done
+
+          if [ -d branding/res ]; then
+            cp -r branding/res/. TMessagesProj/src/main/res/
+            [ -d TMessagesProj_App/src/main/res ] && cp -r branding/res/. TMessagesProj_App/src/main/res/ || true
+          fi
+
           python3 - <<'PY'
-          import re, glob, json
-          appid = "app.trustedgram.x"
-          pat = re.compile(r'''(applicationId\s*=?\s*)(["'])org\.telegram\.messenger([^"']*)(["'])''')
+          import re, glob, json, os
+          appid = os.environ["APP_PACKAGE"]
+          pat = re.compile(r'''(applicationId\s*=?\s*)(["'])org\.telegram\.messenger[^"']*(["'])''')
           n = 0
           for f in glob.glob('**/build.gradle', recursive=True) + glob.glob('**/build.gradle.kts', recursive=True):
               s = open(f).read()
-              t = pat.sub(lambda m: m.group(1) + m.group(2) + appid + m.group(3) + m.group(4), s)
+              t = pat.sub(lambda m: m.group(1) + m.group(2) + appid + m.group(3), s)
               if t != s:
                   open(f, 'w').write(t); n += 1; print('patched', f)
           print('gradle files patched:', n)
@@ -45,19 +74,23 @@ jobs:
                   pn = c['client_info']['android_client_info']['package_name']
                   if pn.startswith('org.telegram.messenger'):
                       c2 = json.loads(json.dumps(c))
-                      c2['client_info']['android_client_info']['package_name'] = appid + pn[len('org.telegram.messenger'):]
+                      c2['client_info']['android_client_info']['package_name'] = appid
                       extra.append(c2)
               d['client'] += extra
               json.dump(d, open(f, 'w'), indent=2)
-              print('patched', f, [c['client_info']['android_client_info']['package_name'] for c in d['client']])
+              print('patched', f)
           PY
-          grep -n "APP_ID" $BV
-          grep -rn --include=*.gradle -E "applicationId" . | head -30
+
+          grep -n "APP_ID\|DEBUG_VERSION" $BV
+          grep -rn --include=build.gradle -E "applicationId" . | head -30
+
       - name: List build tasks
         continue-on-error: true
         run: ./gradlew :TMessagesProj_App:tasks --all | grep -i "^assemble" | head -40
-      - name: Build APK
-        run: ./gradlew --no-daemon -Dorg.gradle.jvmargs=-Xmx6g :TMessagesProj_App:assembleAfatDebug
+
+      - name: Build release APK
+        run: ./gradlew --no-daemon -Dorg.gradle.jvmargs=-Xmx6g :TMessagesProj_App:assembleAfatRelease
+
       - uses: actions/upload-artifact@v4
         with:
           name: TrustedGram-apk
