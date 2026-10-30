@@ -1,0 +1,44 @@
+name: Build TrustedGram
+on: workflow_dispatch
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    env:
+      API_ID: ${{ secrets.API_ID }}
+      API_HASH: ${{ secrets.API_HASH }}
+    steps:
+      - name: Free disk space
+        run: sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android/sdk/ndk
+      - uses: actions/checkout@v4
+        with: { submodules: recursive }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 21 }
+      - uses: android-actions/setup-android@v3
+      - name: Install SDK and NDK
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0" "ndk;27.2.12479018"
+      - name: Check secrets
+        run: test -n "$API_ID" -a -n "$API_HASH" || { echo "API_ID or API_HASH secret missing"; exit 1; }
+      - name: Rebrand to TrustedGram
+        run: |
+          set -e
+          APPID="app.trustedgram.x"
+          BV=TMessagesProj/src/main/java/org/telegram/messenger/BuildVars.java
+          sed -i -E "s/(APP_ID\s*=\s*)[0-9]+;/\1${API_ID};/" $BV
+          sed -i -E "s/(APP_HASH\s*=\s*)\"[^\"]*\";/\1\"${API_HASH}\";/" $BV
+          sed -i -E 's#(<string name="AppName">)[^<]*(</string>)#\1TrustedGram\2#' TMessagesProj/src/main/res/values/strings.xml
+          grep -rl --include=build.gradle applicationId . | xargs sed -i -E "s/(applicationId\s*=?\s*)\"org\.telegram\.messenger[^\"]*\"/\1\"${APPID}\"/"
+          find . -name google-services.json -exec sed -i -E "s/\"package_name\": *\"org\.telegram\.messenger[^\"]*\"/\"package_name\": \"${APPID}\"/" {} +
+          grep -n "APP_ID" $BV
+          grep -rn --include=build.gradle applicationId . | head
+      - name: List build tasks
+        continue-on-error: true
+        run: ./gradlew :TMessagesProj_App:tasks --all | grep -i "^assemble" | head -40
+      - name: Build APK
+        run: |
+          ./gradlew --no-daemon -Dorg.gradle.jvmargs=-Xmx6g :TMessagesProj_App:assembleAfatRelease || \
+          ./gradlew --no-daemon -Dorg.gradle.jvmargs=-Xmx6g :TMessagesProj_App:assembleAfatDebug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TrustedGram-apk
+          path: "**/build/outputs/apk/**/*.apk"
