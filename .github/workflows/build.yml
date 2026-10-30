@@ -9,14 +9,15 @@ jobs:
       API_HASH: ${{ secrets.API_HASH }}
     steps:
       - name: Free disk space
-        run: sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android/sdk/ndk
+        run: sudo rm -rf /usr/share/dotnet /opt/ghc
       - uses: actions/checkout@v4
         with: { submodules: recursive }
       - uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: 21 }
-      - uses: android-actions/setup-android@v3
       - name: Install SDK and NDK
-        run: sdkmanager "platforms;android-36" "build-tools;36.0.0" "ndk;27.2.12479018"
+        run: |
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null || true
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platforms;android-36" "build-tools;36.0.0" "ndk;27.2.12479018"
       - name: Check secrets
         run: test -n "$API_ID" -a -n "$API_HASH" || { echo "API_ID or API_HASH secret missing"; exit 1; }
       - name: Rebrand to TrustedGram
