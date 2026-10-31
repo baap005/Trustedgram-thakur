@@ -12,7 +12,7 @@ import java.util.Set;
 
 /**
  * Accounts you mark as verified in the admin panel. They get Telegram's verified flag inside the app, and the
- * badge image itself is the TrustedGram logo badge (res/drawable-*/verified_*.webp).
+ * badge image itself is the TrustedGram logo badge (the verified_area / verified_check / verified_profile images).
  */
 public class TrustedVerified {
 
