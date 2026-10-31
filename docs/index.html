@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TrustedGram Admin</title>
+<style>
+  :root { --bg:#f4f6fa; --card:#fff; --text:#1c2333; --muted:#6b7488; --line:#dde2ec; --brand:#2f6bff; --danger:#d93a3a; --ok:#1a9d57; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#0f1420; --card:#181f2e; --text:#e8ecf5; --muted:#93a0b8; --line:#2a3347; } }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background:var(--bg); color:var(--text); }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 16px; }
+  h1 { font-size: 22px; margin: 8px 0 16px; }
+  h2 { font-size: 17px; margin: 0 0 12px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; margin-bottom:16px; }
+  label { display:block; font-size:13px; color:var(--muted); margin:10px 0 4px; }
+  input, select, textarea { width:100%; padding:10px; border:1px solid var(--line); border-radius:8px; background:var(--bg); color:var(--text); font-size:15px; }
+  textarea { min-height: 80px; resize: vertical; }
+  .row { display:flex; gap:10px; flex-wrap:wrap; } .row > * { flex:1; min-width:120px; }
+  .check { display:flex; align-items:center; gap:8px; margin-top:12px; font-size:15px; color:var(--text); }
+  .check input { width:auto; }
+  button { background:var(--brand); color:#fff; border:0; padding:10px 16px; border-radius:8px; font-size:15px; cursor:pointer; margin-top:14px; }
+  button.danger { background:var(--danger); margin:0; padding:6px 12px; font-size:13px; }
+  button.ghost { background:transparent; color:var(--muted); border:1px solid var(--line); margin:0; }
+  .item { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 0; border-top:1px solid var(--line); }
+  .item small { color:var(--muted); display:block; }
+  .tabs { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; }
+  .tabs button { margin:0; background:var(--card); color:var(--text); border:1px solid var(--line); }
+  .tabs button.active { background:var(--brand); color:#fff; border-color:var(--brand); }
+  #msg { position:fixed; left:50%; bottom:20px; transform:translateX(-50%); background:#222; color:#fff; padding:10px 16px; border-radius:8px; display:none; max-width:90%; }
+  .hidden { display:none; }
+  .top { display:flex; justify-content:space-between; align-items:center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div id="loginView" class="hidden">
+    <h1>TrustedGram Admin</h1>
+    <div class="card">
+      <label>Email</label><input id="email" type="email" autocomplete="username">
+      <label>Password</label><input id="password" type="password" autocomplete="current-password">
+      <button id="loginBtn">Log in</button>
+    </div>
+  </div>
+
+  <div id="appView" class="hidden">
+    <div class="top"><h1>TrustedGram Admin</h1><button class="ghost" id="logoutBtn">Log out</button></div>
+    <div class="tabs">
+      <button data-tab="verified" class="active">Verified</button>
+      <button data-tab="update">App update</button>
+      <button data-tab="announce">Announcement</button>
+    </div>
+
+    <div id="tab-verified">
+      <div class="card">
+        <h2>Mark as verified</h2>
+        <div class="row">
+          <div><label>Telegram ID (number)</label><input id="vId" inputmode="numeric" placeholder="e.g. 777000"></div>
+          <div><label>Type</label>
+            <select id="vKind"><option value="user">User</option><option value="channel">Channel</option><option value="group">Group</option><option value="bot">Bot</option></select>
+          </div>
+        </div>
+        <label>Note (only you see this)</label><input id="vNote" placeholder="e.g. Official support channel">
+        <button id="vAdd">Add / update</button>
+      </div>
+      <div class="card"><h2>Verified list</h2><div id="vList">Loading...</div></div>
+    </div>
+
+    <div id="tab-update" class="hidden">
+      <div class="card">
+        <h2>App update popup</h2>
+        <div class="row">
+          <div><label>Latest version code (number)</label><input id="cCode" inputmode="numeric"></div>
+          <div><label>Version name</label><input id="cName" placeholder="e.g. 1.1"></div>
+        </div>
+        <label>APK download link (https://...)</label><input id="cUrl" placeholder="GitHub Releases link to your .apk">
+        <label>What's new</label><textarea id="cLog"></textarea>
+        <label class="check"><input type="checkbox" id="cPopup"> Show update popup to users</label>
+        <label class="check"><input type="checkbox" id="cForce"> Force update (users cannot dismiss)</label>
+        <button id="saveUpdate">Save</button>
+      </div>
+    </div>
+
+    <div id="tab-announce" class="hidden">
+      <div class="card">
+        <h2>Announcement popup</h2>
+        <label>Title</label><input id="aTitle">
+        <label>Message</label><textarea id="aText"></textarea>
+        <label class="check"><input type="checkbox" id="aOn"> Announcement is ON</label>
+        <label class="check"><input type="checkbox" id="aBump"> Show again to users who already saw it</label>
+        <button id="saveAnn">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="msg"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+// ====== PASTE YOUR TWO VALUES HERE (anon key only, never the service_role key) ======
+const SUPABASE_URL = "https://lecmoprsrkfqpjvlcvhb.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_TWaj6-vFDmj3LGbaBhEOLg_BnB5Dy3G";
+// ====================================================================================
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const $ = id => document.getElementById(id);
+let config = null;
+
+function toast(t, bad) {
+  const m = $("msg"); m.textContent = t; m.style.background = bad ? "#d93a3a" : "#1a9d57"; m.style.display = "block";
+  setTimeout(() => m.style.display = "none", 3500);
+}
+
+async function show() {
+  const { data } = await sb.auth.getSession();
+  const on = !!data.session;
+  $("loginView").classList.toggle("hidden", on);
+  $("appView").classList.toggle("hidden", !on);
+  if (on) { loadVerified(); loadConfig(); }
+}
+
+$("loginBtn").onclick = async () => {
+  const { error } = await sb.auth.signInWithPassword({ email: $("email").value.trim(), password: $("password").value });
+  if (error) toast("Login failed: " + error.message, true); else show();
+};
+$("logoutBtn").onclick = async () => { await sb.auth.signOut(); show(); };
+
+document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => {
+  document.querySelectorAll(".tabs button").forEach(x => x.classList.toggle("active", x === b));
+  ["verified", "update", "announce"].forEach(t => $("tab-" + t).classList.toggle("hidden", t !== b.dataset.tab));
+});
+
+async function loadVerified() {
+  const { data, error } = await sb.from("verified").select("*").order("created_at", { ascending: false });
+  const box = $("vList"); box.textContent = "";
+  if (error) { box.textContent = "Error: " + error.message; return; }
+  if (!data.length) { box.textContent = "Nothing verified yet."; return; }
+  data.forEach(r => {
+    const row = document.createElement("div"); row.className = "item";
+    const info = document.createElement("div");
+    info.textContent = r.id + " (" + r.kind + ")";
+    const small = document.createElement("small"); small.textContent = r.note || ""; info.appendChild(small);
+    const del = document.createElement("button"); del.className = "danger"; del.textContent = "Remove";
+    del.onclick = async () => {
+      if (!confirm("Remove verification for " + r.id + "?")) return;
+      const { error } = await sb.from("verified").delete().eq("id", r.id).eq("kind", r.kind);
+      if (error) toast(error.message, true); else { toast("Removed"); loadVerified(); }
+    };
+    row.append(info, del); box.appendChild(row);
+  });
+}
+
+$("vAdd").onclick = async () => {
+  const id = Number($("vId").value.trim());
+  if (!Number.isInteger(id) || id <= 0) { toast("Enter a valid positive number ID", true); return; }
+  const { error } = await sb.from("verified").upsert({ id, kind: $("vKind").value, note: $("vNote").value.trim() || null }, { onConflict: "id,kind" });
+  if (error) toast(error.message, true); else { toast("Saved"); $("vId").value = ""; $("vNote").value = ""; loadVerified(); }
+};
+
+async function loadConfig() {
+  const { data, error } = await sb.from("app_config").select("*").eq("id", 1).single();
+  if (error) { toast("Could not load settings: " + error.message, true); return; }
+  config = data;
+  $("cCode").value = data.latest_version_code ?? ""; $("cName").value = data.latest_version_name ?? "";
+  $("cUrl").value = data.apk_url ?? ""; $("cLog").value = data.changelog ?? "";
+  $("cPopup").checked = !!data.update_popup_enabled; $("cForce").checked = !!data.force_update;
+  $("aTitle").value = data.announcement_title ?? ""; $("aText").value = data.announcement_text ?? "";
+  $("aOn").checked = !!data.announcement_enabled;
+}
+
+$("saveUpdate").onclick = async () => {
+  const url = $("cUrl").value.trim();
+  if (url && !url.startsWith("https://")) { toast("APK link must start with https://", true); return; }
+  const code = Number($("cCode").value);
+  if (!Number.isInteger(code) || code < 1) { toast("Version code must be a whole number", true); return; }
+  const { error } = await sb.from("app_config").update({
+    latest_version_code: code, latest_version_name: $("cName").value.trim(), apk_url: url || null,
+    changelog: $("cLog").value, update_popup_enabled: $("cPopup").checked, force_update: $("cForce").checked
+  }).eq("id", 1);
+  if (error) toast(error.message, true); else toast("Update settings saved");
+};
+
+$("saveAnn").onclick = async () => {
+  const nextId = (config?.announcement_id ?? 0) + ($("aBump").checked ? 1 : 0);
+  const { error } = await sb.from("app_config").update({
+    announcement_title: $("aTitle").value, announcement_text: $("aText").value,
+    announcement_enabled: $("aOn").checked, announcement_id: nextId
+  }).eq("id", 1);
+  if (error) toast(error.message, true); else { toast("Announcement saved"); $("aBump").checked = false; loadConfig(); }
+};
+
+show();
+</script>
+</body>
+</html>
