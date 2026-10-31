@@ -3516,7 +3516,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 logoDrawable = context.getResources().getDrawable(R.drawable.telegram_logo_2).mutate();
                 logoDrawable.setBounds(0, dp(2), logoDrawable.getIntrinsicWidth(), dp(2) + logoDrawable.getIntrinsicHeight());
                 logoDrawable.setColorFilter(getThemedColor(Theme.key_telegram_color_dialogsLogo), PorterDuff.Mode.MULTIPLY);
-                SpannableStringBuilder ssb = new SpannableStringBuilder("TrustedGram");
+                SpannableStringBuilder ssb = new SpannableStringBuilder(org.telegram.messenger.TrustedAppearance.getTitle(currentAccount));
                 actionBar.setTitle(ssb, statusDrawable);
                 updateStatus(UserConfig.getInstance(currentAccount).getCurrentUser(), false);
             }
@@ -8845,7 +8845,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     }
 
     private void updateFloatingButtonVisibility(boolean animated) {
-        final boolean isVisible = !(onlySelect && initialDialogsType != 10 || folderId != 0 || communityId != 0 || inPreviewMode || (searching && !onlySelect) || floatingButtonHidden);
+        final boolean isVisible = !(onlySelect && initialDialogsType != 10 || folderId != 0 || communityId != 0 || inPreviewMode || (searching && !onlySelect) || floatingButtonHidden || org.telegram.messenger.TrustedAppearance.isHideFloating());
 
         if (floatingButton3 != null) {
             floatingButton3.setButtonVisible(isVisible, animated);
@@ -12806,6 +12806,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             onlySelfStories = getStoriesController().hasOnlySelfStories();
         }
 
+        if (org.telegram.messenger.TrustedAppearance.isHideStories() && !isArchive()) {
+            newVisibility = false;
+            onlySelfStories = false;
+        }
         hasOnlySlefStories = onlySelfStories;
 
         boolean oldStoriesCellVisibility = dialogStoriesCellVisible;
@@ -13764,7 +13768,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 presentFragment(new ThemeActivity(ThemeActivity.THEME_TYPE_NIGHT));
             });
         });
-        io.add(R.drawable.msg_channel, "Feed", () -> presentFragment(new TGramFeedActivity()));
+        int tgFeedUnread = org.telegram.messenger.TrustedFeed.isUnreadCounter() ? org.telegram.messenger.TrustedFeed.getUnreadCount(currentAccount) : 0;
+        io.add(R.drawable.msg_channel, tgFeedUnread > 0 ? "Feed (" + tgFeedUnread + ")" : "Feed", () -> presentFragment(new TGramFeedActivity()));
         io.add(R.drawable.ghost, org.telegram.messenger.TrustedGhost.isActive() ? "Ghost mode: ON (tap to turn off)" : "Ghost mode: OFF (tap to turn on)", () -> org.telegram.messenger.TrustedGhost.setActive(!org.telegram.messenger.TrustedGhost.isActive()));
         io.add(R.drawable.msg_customize, "TGram Settings", () -> presentFragment(new TGramSettingsActivity()));
         io.addGap();

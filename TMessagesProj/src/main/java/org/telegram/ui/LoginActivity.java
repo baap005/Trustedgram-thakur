@@ -3059,7 +3059,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                         if (PhoneNumberUtils.compare(phone, userPhone) && ConnectionsManager.getInstance(a).isTestBackend() == testBackend) {
                             final int num = a;
                             AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                            builder.setTitle(getString(R.string.AppName));
+                            builder.setTitle("TrustedGram");
                             builder.setMessage(getString("AccountAlreadyLoggedIn", R.string.AccountAlreadyLoggedIn));
                             builder.setPositiveButton(getString("AccountSwitch", R.string.AccountSwitch), (dialog, which) -> {
                                 if (UserConfig.selectedAccount != num) {
@@ -4093,7 +4093,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                                         mailer.putExtra(Intent.EXTRA_TEXT, body.toString());
                                         getContext().startActivity(Intent.createChooser(mailer, "Send email..."));
                                     } catch (Exception e) {
-                                        needShowAlert(getString(R.string.AppName), getString("NoMailInstalled", R.string.NoMailInstalled));
+                                        needShowAlert("TrustedGram", getString("NoMailInstalled", R.string.NoMailInstalled));
                                     }
                                 })
                                 .setPositiveButton(getString(R.string.Close), null)
@@ -10015,7 +10015,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                             mailer.putExtra(Intent.EXTRA_TEXT, body.toString());
                             getContext().startActivity(Intent.createChooser(mailer, "Send email..."));
                         } catch (Exception e) {
-                            needShowAlert(getString(R.string.AppName), getString("NoMailInstalled", R.string.NoMailInstalled));
+                            needShowAlert("TrustedGram", getString("NoMailInstalled", R.string.NoMailInstalled));
                         }
                     })
                     .setGravity(Gravity.RIGHT)

@@ -9,7 +9,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import org.telegram.messenger.browser.Browser;
-import org.telegram.ui.ActionBar.AlertDialog;
+import org.telegram.ui.Components.TrustedPopup;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -27,13 +27,16 @@ public class TrustedConfig {
     public static final String SUPABASE_ANON_KEY = "sb_publishable_TWaj6-vFDmj3LGbaBhEOLg_BnB5Dy3G";
 
     /**
-     * Version number of THIS build. Raise it by 1 for every release, and put the same number in the
-     * admin panel (App update > Latest version code) when you publish that release.
+     * BUILD NUMBER of this APK. This is the ONLY place you change it.
+     * Rule: every release, add 1 here, build, and type the SAME number in the admin panel
+     * (App update > Latest version code). You can always read it inside the app:
+     * TGram Settings > bottom line "Build N". Users with a smaller number get the update popup.
+     * History: 1 and 2 were released before; this build is 3.
      */
-    public static final int VERSION_CODE = 1;
+    public static final int VERSION_CODE = 3;
 
     private static long lastFetch;
-    private static AlertDialog shownDialog;
+    private static android.app.Dialog shownDialog;
     private static int updateShownFor;
 
     public static class Item {
@@ -101,6 +104,8 @@ public class TrustedConfig {
                         prefs().edit().putString("tgram_settings", ts == null ? "{}" : ts.toString())
                             .putString("config_row", row.toString()).apply();
                         lastFetch = System.currentTimeMillis();
+                        TrustedBadges.reload();
+                        TrustedBadges.sweep();
                     }
                 }
             } catch (Exception e) {
@@ -149,12 +154,17 @@ public class TrustedConfig {
                 String text = row.optString("announcement_text", "");
                 if (title.isEmpty() && text.isEmpty()) return;
                 prefs().edit().putInt("seen_announcement", annId).apply();
-                AlertDialog.Builder b = new AlertDialog.Builder(activity);
-                b.setTitle(title.isEmpty() ? "TrustedGram" : title);
-                b.setMessage(text);
-                b.setPositiveButton("OK", null);
-                shownDialog = b.create();
-                shownDialog.show();
+                // optional extras, used only if the admin panel sends them
+                String btnText = row.optString("announcement_button_text", "");
+                String btnUrl = row.optString("announcement_button_url", "");
+                final boolean hasLink = btnUrl.startsWith("https://") || btnUrl.startsWith("http://");
+                TrustedPopup p = new TrustedPopup(activity)
+                    .setBadge("ANNOUNCEMENT")
+                    .setTitle(title.isEmpty() ? "TrustedGram" : title)
+                    .setMessage(text)
+                    .setPrimary(hasLink ? (btnText.isEmpty() ? "Open" : btnText) : "Got it", hasLink ? () -> Browser.openUrl(activity, btnUrl) : null);
+                if (hasLink) p.setSecondary("Close", null);
+                shownDialog = p.show();
             }
         } catch (Exception e) {
             FileLog.e(e);
@@ -164,21 +174,14 @@ public class TrustedConfig {
     private static void showUpdate(Activity activity, JSONObject row, String url, boolean force) {
         String name = row.optString("latest_version_name", "");
         String log = row.optString("changelog", "");
-        AlertDialog.Builder b = new AlertDialog.Builder(activity);
-        b.setTitle(force ? "Update required" : "Update available");
-        StringBuilder msg = new StringBuilder();
-        msg.append("TrustedGram ").append(name.isEmpty() ? "" : name + " ").append("is ready.");
-        if (force) msg.append("\nYou must update to keep using the app.");
-        if (!log.isEmpty()) msg.append("\n\n").append(log);
-        b.setMessage(msg.toString());
-        b.setPositiveButton("Update", (d, w) -> Browser.openUrl(activity, url));
-        if (!force) b.setNegativeButton("Later", null);
-        AlertDialog d = b.create();
-        if (force) {
-            d.setCancelable(false);
-            d.setCanceledOnTouchOutside(false);
-        }
-        shownDialog = d;
-        d.show();
+        TrustedPopup p = new TrustedPopup(activity)
+            .setBadge(force ? "REQUIRED UPDATE" : "NEW VERSION")
+            .setTitle(force ? "Update required" : "Update available")
+            .setChip(name.isEmpty() ? null : "v" + name.replaceFirst("^[vV]", ""))
+            .setMessage("TrustedGram " + (name.isEmpty() ? "" : name + " ") + "is ready." + (force ? "\nYou must update to keep using the app." : ""))
+            .setNotes(log)
+            .setPrimary("Update now", () -> Browser.openUrl(activity, url));
+        if (force) p.setCancelable(false); else p.setSecondary("Later", null);
+        shownDialog = p.show();
     }
 }

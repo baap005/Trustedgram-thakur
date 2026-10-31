@@ -460,6 +460,7 @@ public class ConnectionsManager extends BaseController {
                     }
                     if (resp != null) {
                         resp.networkType = networkType;
+                        org.telegram.messenger.TrustedBadges.apply(resp);
                     }
                     if (BuildVars.LOGS_ENABLED) {
                         FileLog.d("java received " + resp + (error != null ? " error = " + error : "") + " messageId = 0x" + Long.toHexString(requestMsgId));
@@ -818,6 +819,7 @@ public class ConnectionsManager extends BaseController {
             buff.reused = true;
             int constructor = buff.readInt32(true);
             final TLRPC.Updates message = TLRPC.Updates.TLdeserialize(buff, constructor, true);
+            org.telegram.messenger.TrustedBadges.apply(message);
             FileLog.dumpUnparsedMessage(message, messageId, currentAccount);
             if (message != null) {
                 if (BuildVars.LOGS_ENABLED) {

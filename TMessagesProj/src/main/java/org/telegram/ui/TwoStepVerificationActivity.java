@@ -596,9 +596,9 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
                         } else {
                             timeString = LocaleController.formatPluralString("Minutes", time / 60);
                         }
-                        showAlertWithText(getString(R.string.AppName), LocaleController.formatString("FloodWaitTime", R.string.FloodWaitTime, timeString));
+                        showAlertWithText("TrustedGram", LocaleController.formatString("FloodWaitTime", R.string.FloodWaitTime, timeString));
                     } else {
-                        showAlertWithText(getString(R.string.AppName), error.text);
+                        showAlertWithText("TrustedGram", error.text);
                     }
                 }
             }), ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagWithoutLogin);
@@ -973,9 +973,9 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
                         } else {
                             timeString = LocaleController.formatPluralString("Minutes", time / 60);
                         }
-                        showAlertWithText(getString(R.string.AppName), LocaleController.formatString("FloodWaitTime", R.string.FloodWaitTime, timeString));
+                        showAlertWithText("TrustedGram", LocaleController.formatString("FloodWaitTime", R.string.FloodWaitTime, timeString));
                     } else {
-                        showAlertWithText(getString(R.string.AppName), error.text);
+                        showAlertWithText("TrustedGram", error.text);
                     }
                 }
             });
@@ -1112,9 +1112,9 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
                                 } else {
                                     timeString = LocaleController.formatPluralString("Minutes", time / 60);
                                 }
-                                showAlertWithText(getString(R.string.AppName), LocaleController.formatString("FloodWaitTime", R.string.FloodWaitTime, timeString));
+                                showAlertWithText("TrustedGram", LocaleController.formatString("FloodWaitTime", R.string.FloodWaitTime, timeString));
                             } else {
-                                showAlertWithText(getString(R.string.AppName), error.text);
+                                showAlertWithText("TrustedGram", error.text);
                             }
                         });
                     }

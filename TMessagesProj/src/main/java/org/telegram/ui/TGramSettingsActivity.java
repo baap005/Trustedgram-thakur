@@ -16,7 +16,7 @@ public class TGramSettingsActivity extends UniversalFragment {
 
     private static final int ID_CHANNEL_BASE = 1000;
     private static final int ID_TOGGLE_BASE = 100;
-    private static final int ID_FEED = 20, ID_FEED_CHANNELS = 21;
+    private static final int ID_FEED = 20, ID_FEED_CHANNELS = 21, ID_APPEARANCE = 22;
     private static final int ID_GHOST = 10, ID_GHOST_READ = 11, ID_GHOST_ONLINE = 12, ID_GHOST_TYPING = 13, ID_GHOST_AFTER_SEND = 14;
 
     private static final String[][] CHANNELS = {
@@ -46,9 +46,12 @@ public class TGramSettingsActivity extends UniversalFragment {
 
     @Override
     protected void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
+        items.add(UItem.asHeader("Appearance"));
+        items.add(UItem.asButton(ID_APPEARANCE, "Appearance", "Title text, stories row, floating button"));
+        items.add(UItem.asShadow(null));
         items.add(UItem.asHeader("Feed"));
         items.add(UItem.asButton(ID_FEED, "Open feed", "Latest posts from your channels"));
-        items.add(UItem.asButton(ID_FEED_CHANNELS, "Choose feed channels"));
+        items.add(UItem.asButton(ID_FEED_CHANNELS, "Feed Settings", "Channels, wide posts, unread counter, archive"));
         items.add(UItem.asShadow(null));
         items.add(UItem.asHeader("Ghost mode"));
         items.add(UItem.asButtonCheck(ID_GHOST, "Ghost mode", "Hide read receipts, online status and typing in one tap").setChecked(TrustedGhost.isActive()));
@@ -69,11 +72,15 @@ public class TGramSettingsActivity extends UniversalFragment {
         for (int i = 0; i < CHANNELS.length; i++) {
             items.add(UItem.asButton(ID_CHANNEL_BASE + i, CHANNELS[i][0], "@" + CHANNELS[i][1]));
         }
-        items.add(UItem.asShadow("TrustedGram \u2022 Powered by VTH NETWORK"));
+        items.add(UItem.asShadow("TrustedGram \u2022 Powered by VTH NETWORK\nBuild " + TrustedConfig.VERSION_CODE));
     }
 
     @Override
     protected void onClick(UItem item, View view, int position, float x, float y) {
+        if (item.id == ID_APPEARANCE) {
+            presentFragment(new TGramAppearanceActivity());
+            return;
+        }
         if (item.id == ID_FEED) {
             presentFragment(new TGramFeedActivity());
             return;

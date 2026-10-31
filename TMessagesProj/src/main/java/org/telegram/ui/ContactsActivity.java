@@ -749,7 +749,7 @@ public class ContactsActivity extends BaseFragment implements FactorAnimator.Tar
                         }
                         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                         builder.setMessage(getString(R.string.InviteUser));
-                        builder.setTitle(getString(R.string.AppName));
+                        builder.setTitle("TrustedGram");
                         final String arg1 = usePhone;
                         builder.setPositiveButton(getString(R.string.OK), (dialogInterface, i) -> {
                             try {
@@ -1139,7 +1139,7 @@ public class ContactsActivity extends BaseFragment implements FactorAnimator.Tar
                 }
             }
             AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-            builder.setTitle(getString(R.string.AppName));
+            builder.setTitle("TrustedGram");
             String message = LocaleController.formatStringSimple(selectAlertString, UserObject.getUserName(user));
             EditTextBoldCursor editText = null;
             if (!user.bot && needForwardCount) {
