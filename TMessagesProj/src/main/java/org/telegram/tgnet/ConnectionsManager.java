@@ -395,10 +395,17 @@ public class ConnectionsManager extends BaseController {
         return requestToken;
     }
 
-    private void sendRequestInternal(TLObject object, RequestDelegate onComplete, RequestDelegateTimestamp onCompleteTimestamp, QuickAckDelegate onQuickAck, WriteToSocketDelegate onWriteToSocket, int flags, int datacenterId, int connectionType, boolean immediate, int requestToken) {
+    private void sendRequestInternal(TLObject object, RequestDelegate onCompleteOrig, RequestDelegateTimestamp onCompleteTimestamp, QuickAckDelegate onQuickAck, WriteToSocketDelegate onWriteToSocket, int flags, int datacenterId, int connectionType, boolean immediate, int requestToken) {
         if (BuildVars.LOGS_ENABLED) {
             FileLog.d("send request " + object + " with token = " + requestToken);
         }
+        // --- TrustedGram ghost mode hook
+        if (org.telegram.messenger.TrustedGhost.shouldDrop(object, onCompleteOrig)) {
+            return;
+        }
+        org.telegram.messenger.TrustedGhost.patch(object);
+        final RequestDelegate onComplete = org.telegram.messenger.TrustedGhost.afterSend(currentAccount, object, onCompleteOrig);
+        // --- end ghost mode hook
         try {
             NativeByteBuffer buffer = new NativeByteBuffer(object.getObjectSize());
             object.serializeToStream(buffer);

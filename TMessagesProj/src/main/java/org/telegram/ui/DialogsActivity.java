@@ -13765,6 +13765,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 presentFragment(new ThemeActivity(ThemeActivity.THEME_TYPE_NIGHT));
             });
         });
+        io.add(R.drawable.ghost, org.telegram.messenger.TrustedGhost.isActive() ? "Ghost mode: ON (tap to turn off)" : "Ghost mode: OFF (tap to turn on)", () -> org.telegram.messenger.TrustedGhost.setActive(!org.telegram.messenger.TrustedGhost.isActive()));
+        io.add(R.drawable.msg_customize, "TGram Settings", () -> presentFragment(new TGramSettingsActivity()));
         io.addGap();
         io.add(R.drawable.outline_groups_24, getString(R.string.NewGroup), () -> {
             Bundle args = new Bundle();
