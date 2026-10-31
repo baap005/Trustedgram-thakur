@@ -4111,7 +4111,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                 NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.didReceiveSmsCode, code);
             } else {
                 AlertDialog.Builder builder = new AlertDialog.Builder(LaunchActivity.this);
-                builder.setTitle("TrustedGram");
+                builder.setTitle(LocaleController.getString(R.string.AppName));
                 builder.setMessage(AndroidUtilities.replaceTags(LocaleController.formatString(R.string.OtherLoginCode, code)));
                 builder.setPositiveButton(LocaleController.getString(R.string.OK), null);
                 showAlertDialog(builder);
@@ -5079,7 +5079,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                             }
                         } else {
                             AlertDialog.Builder builder = new AlertDialog.Builder(LaunchActivity.this);
-                            builder.setTitle("TrustedGram");
+                            builder.setTitle(LocaleController.getString(R.string.AppName));
                             if (error.text.startsWith("FLOOD_WAIT")) {
                                 builder.setMessage(LocaleController.getString(R.string.FloodWait));
                             } else if (error.text.startsWith("INVITE_HASH_EXPIRED")) {
@@ -5147,7 +5147,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                                 }
                             } else {
                                 AlertDialog.Builder builder = new AlertDialog.Builder(LaunchActivity.this);
-                                builder.setTitle("TrustedGram");
+                                builder.setTitle(LocaleController.getString(R.string.AppName));
                                 if (error.text.startsWith("FLOOD_WAIT")) {
                                     builder.setMessage(LocaleController.getString(R.string.FloodWait));
                                 } else if (error.text.equals("USERS_TOO_MUCH")) {
@@ -7328,7 +7328,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
             }
 
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
-            builder.setTitle("TrustedGram");
+            builder.setTitle(LocaleController.getString(R.string.AppName));
             if (fragment != null) {
                 Map<String, Integer> colorsReplacement = new HashMap<>();
                 colorsReplacement.put("info1", fragment.getThemedColor(Theme.key_dialogTopBackground));
@@ -7395,7 +7395,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         } else if (id == NotificationCenter.wasUnableToFindCurrentLocation) {
             final HashMap<String, MessageObject> waitingForLocation = (HashMap<String, MessageObject>) args[0];
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
-            builder.setTitle("TrustedGram");
+            builder.setTitle(LocaleController.getString(R.string.AppName));
             builder.setPositiveButton(LocaleController.getString(R.string.OK), null);
             builder.setNegativeButton(LocaleController.getString(R.string.ShareYouLocationUnableManually), (dialogInterface, i) -> {
                 if (mainFragmentsStack.isEmpty()) {
