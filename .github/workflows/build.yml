@@ -57,24 +57,21 @@ jobs:
             [ -d TMessagesProj_App/src/main/res ] && cp -r branding/res/. TMessagesProj_App/src/main/res/ || true
           fi
 
+          # The real package name setting lives in gradle.properties
+          sed -i -E "s/^APP_PACKAGE=.*/APP_PACKAGE=${APP_PACKAGE}/" gradle.properties
+
+          # Firebase file must know the new package name
           python3 - <<'PY'
-          import re, glob, json, os
+          import glob, json, os
           appid = os.environ["APP_PACKAGE"]
-          pat = re.compile(r'''(applicationId\s*=?\s*)(["'])org\.telegram\.messenger[^"']*(["'])''')
-          n = 0
-          for f in glob.glob('**/build.gradle', recursive=True) + glob.glob('**/build.gradle.kts', recursive=True):
-              s = open(f).read()
-              t = pat.sub(lambda m: m.group(1) + m.group(2) + appid + m.group(3), s)
-              if t != s:
-                  open(f, 'w').write(t); n += 1; print('patched', f)
-          print('gradle files patched:', n)
+          old = "org.telegram.messenger"
           for f in glob.glob('**/google-services.json', recursive=True):
               d = json.load(open(f)); extra = []
               for c in d.get('client', []):
                   pn = c['client_info']['android_client_info']['package_name']
-                  if pn.startswith('org.telegram.messenger'):
+                  if pn.startswith(old):
                       c2 = json.loads(json.dumps(c))
-                      c2['client_info']['android_client_info']['package_name'] = appid
+                      c2['client_info']['android_client_info']['package_name'] = appid + pn[len(old):]
                       extra.append(c2)
               d['client'] += extra
               json.dump(d, open(f, 'w'), indent=2)
@@ -82,7 +79,7 @@ jobs:
           PY
 
           grep -n "APP_ID\|DEBUG_VERSION" $BV
-          grep -rn --include=build.gradle -E "applicationId" . | head -30
+          grep -n "APP_PACKAGE" gradle.properties
 
       - name: List build tasks
         continue-on-error: true
