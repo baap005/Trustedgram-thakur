@@ -3516,8 +3516,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 logoDrawable = context.getResources().getDrawable(R.drawable.telegram_logo_2).mutate();
                 logoDrawable.setBounds(0, dp(2), logoDrawable.getIntrinsicWidth(), dp(2) + logoDrawable.getIntrinsicHeight());
                 logoDrawable.setColorFilter(getThemedColor(Theme.key_telegram_color_dialogsLogo), PorterDuff.Mode.MULTIPLY);
-                SpannableStringBuilder ssb = new SpannableStringBuilder(getString(R.string.AppName));
-                ssb.setSpan(new ImageSpan(logoDrawable), 0, ssb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                SpannableStringBuilder ssb = new SpannableStringBuilder("TrustedGram");
                 actionBar.setTitle(ssb, statusDrawable);
                 updateStatus(UserConfig.getInstance(currentAccount).getCurrentUser(), false);
             }
@@ -13765,6 +13764,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 presentFragment(new ThemeActivity(ThemeActivity.THEME_TYPE_NIGHT));
             });
         });
+        io.add(R.drawable.msg_channel, "Feed", () -> presentFragment(new TGramFeedActivity()));
         io.add(R.drawable.ghost, org.telegram.messenger.TrustedGhost.isActive() ? "Ghost mode: ON (tap to turn off)" : "Ghost mode: OFF (tap to turn on)", () -> org.telegram.messenger.TrustedGhost.setActive(!org.telegram.messenger.TrustedGhost.isActive()));
         io.add(R.drawable.msg_customize, "TGram Settings", () -> presentFragment(new TGramSettingsActivity()));
         io.addGap();

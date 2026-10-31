@@ -132,21 +132,22 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
     public boolean onFragmentCreate() {
         MessagesController.getGlobalMainSettings().edit().putLong("intro_crashed_time", System.currentTimeMillis()).apply();
 
+        // Hardcoded on purpose: Telegram's server language pack would otherwise bring back "Telegram" texts.
         titles = new CharSequence[]{
                 null,
-                LocaleController.getString(R.string.Page2Title),
-                LocaleController.getString(R.string.Page3Title),
-                LocaleController.getString(R.string.Page5Title),
-                LocaleController.getString(R.string.Page4Title),
-                LocaleController.getString(R.string.Page6Title)
+                "Fast",
+                "Free",
+                "Powerful",
+                "Secure",
+                "Cloud-Based"
         };
         messages = new String[]{
-                LocaleController.getString(R.string.Page1Message),
-                LocaleController.getString(R.string.Page2Message),
-                LocaleController.getString(R.string.Page3Message),
-                LocaleController.getString(R.string.Page5Message),
-                LocaleController.getString(R.string.Page4Message),
-                LocaleController.getString(R.string.Page6Message)
+                "A smarter way to use Telegram.\nBuilt for **privacy** and **control**.",
+                "**TrustedGram** runs on Telegram's fast\nglobal network.",
+                "**TrustedGram** is free to use, with extra\ntools built right in.",
+                "Ghost mode, verified badges and more\nin **TGram Settings**.",
+                "Your chats stay protected by\nTelegram's **encryption**.",
+                "Access your messages from\n**multiple devices**."
         };
         return true;
     }
@@ -155,9 +156,7 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
     public View createView(Context context) {
         logoDrawable = context.getResources().getDrawable(R.drawable.telegram_logo).mutate();
         logoDrawable.setBounds(0, dp(8.666f), dp(115), dp(35));
-        SpannableStringBuilder ssb = new SpannableStringBuilder(LocaleController.getString(R.string.Page1Title));
-        ssb.setSpan(new ImageSpan(logoDrawable), 0, ssb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-        titles[0] = ssb;
+        titles[0] = "TrustedGram";
 
 
         actionBar.setAddToContainer(false);
@@ -793,7 +792,7 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
             loadTexture(R.drawable.intro_tg_plane, 21);
             loadTexture(v -> {
                 Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-                paint.setColor(ThemeColors.TELEGRAM_COLOR); // It's logo color, it should not be colored by the theme
+                paint.setColor(0xFF000000); // It's logo color, it should not be colored by the theme
                 int size = dp(ICON_HEIGHT_DP);
                 Bitmap bm = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
                 Canvas c = new Canvas(bm);

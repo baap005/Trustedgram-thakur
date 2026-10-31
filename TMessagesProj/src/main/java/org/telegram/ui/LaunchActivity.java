@@ -7085,6 +7085,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         super.onResume();
         isResumed = true;
         pipActivityHandler.onResume();
+        org.telegram.messenger.TrustedConfig.check(this);
         if (onResumeStaticCallback != null) {
             onResumeStaticCallback.run();
             onResumeStaticCallback = null;
