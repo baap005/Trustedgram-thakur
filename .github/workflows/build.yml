@@ -10,7 +10,7 @@ jobs:
       API_ID: ${{ secrets.API_ID }}
       API_HASH: ${{ secrets.API_HASH }}
       APP_NAME: TrustedGram
-      APP_PACKAGE: app.trustedgram.x
+      APP_PACKAGE: app.trustedgram.android
     steps:
       - name: Free disk space
         run: sudo rm -rf /usr/share/dotnet /opt/ghc
