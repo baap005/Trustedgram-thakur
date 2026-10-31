@@ -6847,6 +6847,7 @@ public class MessagesController extends BaseController implements NotificationCe
         if (user == null) {
             return false;
         }
+        TrustedVerified.apply(user);
         fromCache = fromCache && user.id / 1000 != 333 && user.id != 777000;
         TLRPC.User oldUser = users.get(user.id);
         if (oldUser == user && !force) {
@@ -6982,6 +6983,7 @@ public class MessagesController extends BaseController implements NotificationCe
         if (chat == null) {
             return;
         }
+        TrustedVerified.apply(chat);
         TLRPC.Chat oldChat = chats.get(chat.id);
         if (oldChat == chat) {
             return;
