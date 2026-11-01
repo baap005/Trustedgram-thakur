@@ -8,6 +8,7 @@ import android.content.SharedPreferences;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.telegram.messenger.browser.Browser;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.TrustedPopup;
 
 import java.io.BufferedReader;
@@ -53,6 +54,43 @@ public class TrustedConfig {
 
     public static void setTitleText(String text) {
         prefs().edit().putString("title_text", text == null ? "" : text.trim()).apply();
+    }
+
+    /** 0 = app name, 1 = first name of the account, 2 = custom text. */
+    public static int getTitleMode() {
+        return prefs().getInt("title_mode", 0);
+    }
+
+    public static void setTitleMode(int mode) {
+        prefs().edit().putInt("title_mode", mode).apply();
+    }
+
+    public static boolean isTitleCentered() {
+        return prefs().getBoolean("title_center", false);
+    }
+
+    public static void setTitleCentered(boolean v) {
+        prefs().edit().putBoolean("title_center", v).apply();
+    }
+
+    public static boolean isFeedUnreadCounter() {
+        return prefs().getBoolean("feed_unread", true);
+    }
+
+    public static void setFeedUnreadCounter(boolean v) {
+        prefs().edit().putBoolean("feed_unread", v).apply();
+    }
+
+    /** The text at the top of the chat list. */
+    public static String getChatListTitle(int account) {
+        int mode = getTitleMode();
+        if (mode == 1) {
+            TLRPC.User u = UserConfig.getInstance(account).getCurrentUser();
+            if (u != null && u.first_name != null && !u.first_name.trim().isEmpty()) return u.first_name.trim();
+        } else if (mode == 2) {
+            return getTitleText();
+        }
+        return "TrustedGram";
     }
 
     public static boolean isGlassBlur() {

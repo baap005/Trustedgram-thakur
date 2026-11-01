@@ -4,47 +4,58 @@ import static org.telegram.messenger.AndroidUtilities.dp;
 
 import android.content.Context;
 import android.graphics.Typeface;
+import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
-import android.graphics.drawable.GradientDrawable;
-import org.telegram.messenger.TrustedConfig;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.text.style.CharacterStyle;
+import android.text.style.URLSpan;
 import android.view.Gravity;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
-import android.widget.ScrollView;
 import android.widget.TextView;
 
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.FileLoader;
-import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
+import org.telegram.messenger.TrustedConfig;
 import org.telegram.messenger.TrustedFeed;
+import org.telegram.messenger.TrustedGhost;
+import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
+import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.RecyclerListView;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 
-/** One combined list of the newest posts from the channels the user chose. Tap a post to open it in its channel. */
+/**
+ * Combined feed of the newest posts from the joined channels the user picked. Posts are drawn with Telegram's own
+ * chat message cell, so premium emojis, text formatting, quotes, links, reactions and media look exactly like in the channel.
+ */
 public class TGramFeedActivity extends BaseFragment {
 
     private static final int PER_CHANNEL = 6;
     private static final int MAX_CHANNELS = 30;
     private static final int MAX_POSTS = 80;
-    private static final int MENU_CHANNELS = 1, MENU_REFRESH = 2;
+    private static final int MENU_READ = 1, MENU_SETTINGS = 2, MENU_REFRESH = 3;
 
     private static class Post {
         MessageObject message;
@@ -52,7 +63,9 @@ public class TGramFeedActivity extends BaseFragment {
     }
 
     private final ArrayList<Post> posts = new ArrayList<>();
-    private LinearLayout list;
+    private final ArrayList<TLRPC.Chat> loadedChannels = new ArrayList<>();
+    private RecyclerListView listView;
+    private Adapter adapter;
     private TextView statusView;
     private int loadGeneration;
     private int pending;
@@ -63,25 +76,38 @@ public class TGramFeedActivity extends BaseFragment {
         actionBar.setAllowOverlayTitle(true);
         actionBar.setTitle("Feed");
         ActionBarMenu menu = actionBar.createMenu();
+        menu.addItem(MENU_READ, R.drawable.msg_markread);
         menu.addItem(MENU_REFRESH, R.drawable.msg_retry);
-        menu.addItem(MENU_CHANNELS, R.drawable.msg_customize);
+        menu.addItem(MENU_SETTINGS, R.drawable.msg_customize);
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(int id) {
                 if (id == -1) finishFragment();
-                else if (id == MENU_CHANNELS) presentFragment(new TGramFeedChannelsActivity());
+                else if (id == MENU_SETTINGS) presentFragment(new TGramFeedChannelsActivity());
                 else if (id == MENU_REFRESH) load();
+                else if (id == MENU_READ) confirmMarkAllRead();
             }
         });
 
         FrameLayout frame = new FrameLayout(context);
-        frame.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
-        ScrollView scroll = new ScrollView(context);
-        list = new LinearLayout(context);
-        list.setOrientation(LinearLayout.VERTICAL);
-        list.setPadding(0, dp(6), 0, dp(12));
-        scroll.addView(list, new ScrollView.LayoutParams(ScrollView.LayoutParams.MATCH_PARENT, ScrollView.LayoutParams.WRAP_CONTENT));
-        frame.addView(scroll, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        Drawable wallpaper = null;
+        try {
+            Drawable cached = Theme.getCachedWallpaperNonBlocking();
+            if (cached != null && cached.getConstantState() != null) {
+                wallpaper = cached.getConstantState().newDrawable().mutate();
+            }
+        } catch (Throwable ignore) {
+        }
+        frame.setBackground(wallpaper != null ? wallpaper : new ColorDrawable(Theme.getColor(Theme.key_windowBackgroundGray)));
+
+        listView = new RecyclerListView(context);
+        listView.setLayoutManager(new LinearLayoutManager(context));
+        adapter = new Adapter();
+        listView.setAdapter(adapter);
+        listView.setClipToPadding(false);
+        listView.setPadding(0, dp(6), 0, dp(12));
+        frame.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+
         statusView = new TextView(context);
         statusView.setTextSize(15);
         statusView.setGravity(Gravity.CENTER);
@@ -100,26 +126,28 @@ public class TGramFeedActivity extends BaseFragment {
         if (TrustedFeed.dirty) load();
     }
 
+    // ------------------------------------------------------------------ loading
+
     private void load() {
         TrustedFeed.dirty = false;
         final int account = currentAccount;
-        ArrayList<TLRPC.Chat> channels = new ArrayList<>();
+        loadedChannels.clear();
         for (TLRPC.Chat c : TrustedFeed.getChannels(account)) {
-            if (TrustedFeed.isIncluded(c.id) && channels.size() < MAX_CHANNELS) channels.add(c);
+            if (TrustedFeed.isIncluded(c.id) && loadedChannels.size() < MAX_CHANNELS) loadedChannels.add(c);
         }
-        actionBar.setSubtitle(channels.size() + (channels.size() == 1 ? " channel" : " channels"));
         final int generation = ++loadGeneration;
         posts.clear();
-        list.removeAllViews();
-        if (channels.isEmpty()) {
+        adapter.notifyDataSetChanged();
+        updateSubtitle();
+        if (loadedChannels.isEmpty()) {
             statusView.setText("Your feed is empty.\nTap the settings icon at the top to choose channels.");
             statusView.setVisibility(View.VISIBLE);
             return;
         }
         statusView.setText("Loading feed...");
         statusView.setVisibility(View.VISIBLE);
-        pending = channels.size();
-        for (TLRPC.Chat chat : channels) {
+        pending = loadedChannels.size();
+        for (TLRPC.Chat chat : new ArrayList<>(loadedChannels)) {
             TLRPC.TL_messages_getHistory req = new TLRPC.TL_messages_getHistory();
             req.peer = MessagesController.getInstance(account).getInputPeer(-chat.id);
             req.limit = PER_CHANNEL;
@@ -136,7 +164,7 @@ public class TGramFeedActivity extends BaseFragment {
                     for (TLRPC.Message m : res.messages) {
                         if (m instanceof TLRPC.TL_messageEmpty || m instanceof TLRPC.TL_messageService) continue;
                         Post p = new Post();
-                        p.message = new MessageObject(account, m, users, chats, false, false);
+                        p.message = new MessageObject(account, m, users, chats, true, true);
                         p.chat = chat;
                         posts.add(p);
                     }
@@ -147,95 +175,154 @@ public class TGramFeedActivity extends BaseFragment {
     }
 
     private void render() {
-        list.removeAllViews();
         Collections.sort(posts, (a, b) -> b.message.messageOwner.date - a.message.messageOwner.date);
-        if (posts.isEmpty()) {
-            statusView.setText("No posts found.");
-            return;
+        while (posts.size() > MAX_POSTS) posts.remove(posts.size() - 1);
+        adapter.notifyDataSetChanged();
+        statusView.setVisibility(posts.isEmpty() ? View.VISIBLE : View.GONE);
+        if (posts.isEmpty()) statusView.setText("No posts found.");
+        updateSubtitle();
+    }
+
+    private int countUnread() {
+        int total = 0;
+        MessagesController mc = MessagesController.getInstance(currentAccount);
+        for (TLRPC.Chat c : loadedChannels) {
+            TLRPC.Dialog d = mc.dialogs_dict.get(-c.id);
+            if (d != null) total += d.unread_count;
         }
-        statusView.setVisibility(View.GONE);
-        Context context = getContext();
-        for (int i = 0; i < posts.size() && i < MAX_POSTS; i++) {
-            int side = TrustedConfig.isFeedWide() ? 6 : 24;
-            list.addView(makePostView(context, posts.get(i)), LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, side, 4, side, 4));
+        return total;
+    }
+
+    private void updateSubtitle() {
+        String text = loadedChannels.size() + (loadedChannels.size() == 1 ? " channel" : " channels");
+        if (TrustedConfig.isFeedUnreadCounter()) {
+            int unread = countUnread();
+            if (unread > 0) text += " \u2022 " + unread + " unread";
+        }
+        actionBar.setSubtitle(text);
+    }
+
+    // ------------------------------------------------------------------ mark all read
+
+    private void confirmMarkAllRead() {
+        if (getParentActivity() == null) return;
+        AlertDialog.Builder b = new AlertDialog.Builder(getParentActivity());
+        b.setTitle("Mark All as Read");
+        b.setMessage("Mark all posts in your feed channels as read? This will also mark them as read in the original channels.");
+        b.setPositiveButton("Mark as read", (d, w) -> markAllRead());
+        b.setNegativeButton("Cancel", null);
+        showDialog(b.create());
+    }
+
+    private void markAllRead() {
+        MessagesController mc = MessagesController.getInstance(currentAccount);
+        for (TLRPC.Chat c : loadedChannels) {
+            TLRPC.Dialog d = mc.dialogs_dict.get(-c.id);
+            if (d == null || d.unread_count <= 0) continue;
+            TrustedGhost.allowNextRead();
+            mc.markDialogAsRead(-c.id, d.top_message, d.top_message, d.last_message_date, false, 0, d.unread_count, true, 0);
+        }
+        AndroidUtilities.runOnUIThread(this::updateSubtitle, 600);
+    }
+
+    // ------------------------------------------------------------------ list
+
+    private class Adapter extends RecyclerListView.SelectionAdapter {
+        @Override
+        public boolean isEnabled(RecyclerView.ViewHolder holder) {
+            return false;
+        }
+
+        @Override
+        public int getItemCount() {
+            return posts.size();
+        }
+
+        @Override
+        public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+            PostView view = new PostView(parent.getContext());
+            view.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.WRAP_CONTENT));
+            return new RecyclerListView.Holder(view);
+        }
+
+        @Override
+        public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
+            ((PostView) holder.itemView).bind(posts.get(position));
         }
     }
 
-    private View makePostView(Context context, Post post) {
-        final MessageObject mo = post.message;
-        LinearLayout card = new LinearLayout(context);
-        card.setOrientation(LinearLayout.VERTICAL);
-        card.setPadding(dp(16), dp(12), dp(16), dp(12));
-        GradientDrawable bubble = new GradientDrawable();
-        bubble.setColor(Theme.getColor(Theme.key_chat_inBubble));
-        bubble.setCornerRadius(dp(18));
-        card.setBackground(bubble);
+    private class PostView extends LinearLayout {
+        private final BackupImageView avatar;
+        private final TextView nameView;
+        private final TextView dateView;
+        private final ChatMessageCell cell;
+        private Post current;
 
-        LinearLayout header = new LinearLayout(context);
-        header.setOrientation(LinearLayout.HORIZONTAL);
-        header.setGravity(Gravity.CENTER_VERTICAL);
-        BackupImageView avatar = new BackupImageView(context);
-        avatar.setRoundRadius(dp(20));
-        AvatarDrawable avatarDrawable = new AvatarDrawable();
-        avatarDrawable.setInfo(post.chat);
-        avatar.setForUserOrChat(post.chat, avatarDrawable);
-        header.addView(avatar, LayoutHelper.createLinear(40, 40));
-        LinearLayout names = new LinearLayout(context);
-        names.setOrientation(LinearLayout.VERTICAL);
-        TextView name = new TextView(context);
-        name.setTextSize(16);
-        name.setTypeface(Typeface.DEFAULT_BOLD);
-        name.setSingleLine(true);
-        name.setEllipsize(TextUtils.TruncateAt.END);
-        name.setTextColor(Theme.getColor(Theme.key_chat_messageLinkIn));
-        name.setText(post.chat.title);
-        names.addView(name);
-        TextView date = new TextView(context);
-        date.setTextSize(13);
-        date.setTextColor(Theme.getColor(Theme.key_chat_inTimeText));
-        date.setText(LocaleController.formatDateChat(mo.messageOwner.date));
-        names.addView(date);
-        header.addView(names, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 12, 0, 0, 0));
-        card.addView(header);
+        PostView(Context context) {
+            super(context);
+            setOrientation(VERTICAL);
 
-        String text = mo.messageOwner.message;
-        if (TextUtils.isEmpty(text)) {
-            text = mo.isVideo() ? "Video" : mo.isPhoto() ? "Photo" : mo.messageOwner.media != null ? "Media" : "";
-        }
-        if (!TextUtils.isEmpty(text)) {
-            TextView body = new TextView(context);
-            body.setTextSize(16);
-            body.setMaxLines(10);
-            body.setEllipsize(TextUtils.TruncateAt.END);
-            body.setTextColor(Theme.getColor(Theme.key_chat_messageTextIn));
-            body.setText(text);
-            card.addView(body, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 10, 0, 0));
-        }
+            LinearLayout header = new LinearLayout(context);
+            header.setOrientation(HORIZONTAL);
+            header.setGravity(Gravity.CENTER_VERTICAL);
+            header.setPadding(dp(16), dp(8), dp(16), dp(2));
+            avatar = new BackupImageView(context);
+            avatar.setRoundRadius(dp(16));
+            header.addView(avatar, LayoutHelper.createLinear(32, 32));
+            LinearLayout names = new LinearLayout(context);
+            names.setOrientation(VERTICAL);
+            nameView = new TextView(context);
+            nameView.setTextSize(15);
+            nameView.setTypeface(Typeface.DEFAULT_BOLD);
+            nameView.setSingleLine(true);
+            nameView.setEllipsize(TextUtils.TruncateAt.END);
+            nameView.setTextColor(Theme.getColor(Theme.key_chat_messageLinkIn));
+            names.addView(nameView);
+            dateView = new TextView(context);
+            dateView.setTextSize(12);
+            dateView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
+            names.addView(dateView);
+            header.addView(names, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 10, 0, 0, 0));
+            header.setOnClickListener(v -> openPost());
+            addView(header, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
 
-        if (mo.photoThumbs != null && !mo.photoThumbs.isEmpty() && (mo.isPhoto() || mo.isVideo())) {
-            TLRPC.PhotoSize size = FileLoader.getClosestPhotoSizeWithSize(mo.photoThumbs, AndroidUtilities.getPhotoSize());
-            if (size != null) {
-                BackupImageView photo = new BackupImageView(context);
-                photo.setRoundRadius(dp(8));
-                photo.setImage(ImageLocation.getForObject(size, mo.photoThumbsObject), "600_400", (Drawable) null, mo);
-                card.addView(photo, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 200, 0, 10, 0, 0));
-            }
+            cell = new ChatMessageCell(context, currentAccount);
+            cell.setDelegate(new ChatMessageCell.ChatMessageCellDelegate() {
+                @Override
+                public boolean canPerformActions() {
+                    return true;
+                }
+
+                @Override
+                public void didPressUrl(ChatMessageCell cell, CharacterStyle url, boolean longPress) {
+                    if (longPress || !(url instanceof URLSpan) || getParentActivity() == null) return;
+                    String link = ((URLSpan) url).getURL();
+                    if (link != null) Browser.openUrl(getParentActivity(), link);
+                }
+            });
+            addView(cell, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
         }
 
-        if (mo.messageOwner.views > 0) {
-            TextView views = new TextView(context);
-            views.setTextSize(13);
-            views.setTextColor(Theme.getColor(Theme.key_chat_inTimeText));
-            views.setText(LocaleController.formatShortNumber(mo.messageOwner.views, null) + " views");
-            card.addView(views, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 8, 0, 0));
+        void bind(Post post) {
+            current = post;
+            int side = TrustedConfig.isFeedWide() ? 0 : dp(14);
+            setPadding(side, 0, side, 0);
+            AvatarDrawable avatarDrawable = new AvatarDrawable();
+            avatarDrawable.setInfo(post.chat);
+            avatar.setForUserOrChat(post.chat, avatarDrawable);
+            nameView.setText(post.chat.title);
+            dateView.setText(LocaleController.formatDateChat(post.message.messageOwner.date));
+            cell.isChat = false;
+            cell.setFullyDraw(true);
+            cell.setMessageObject(post.message, null, false, false, false);
         }
 
-        card.setOnClickListener(v -> {
+        private void openPost() {
+            if (current == null) return;
             Bundle args = new Bundle();
-            args.putLong("chat_id", post.chat.id);
-            args.putInt("message_id", mo.getId());
+            args.putLong("chat_id", current.chat.id);
+            args.putInt("message_id", current.message.getId());
             presentFragment(new ChatActivity(args));
-        });
-        return card;
+        }
     }
 }

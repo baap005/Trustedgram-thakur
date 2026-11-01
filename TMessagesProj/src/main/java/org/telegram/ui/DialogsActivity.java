@@ -3516,8 +3516,11 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 logoDrawable = context.getResources().getDrawable(R.drawable.telegram_logo_2).mutate();
                 logoDrawable.setBounds(0, dp(2), logoDrawable.getIntrinsicWidth(), dp(2) + logoDrawable.getIntrinsicHeight());
                 logoDrawable.setColorFilter(getThemedColor(Theme.key_telegram_color_dialogsLogo), PorterDuff.Mode.MULTIPLY);
-                SpannableStringBuilder ssb = new SpannableStringBuilder(org.telegram.messenger.TrustedConfig.getTitleText());
+                SpannableStringBuilder ssb = new SpannableStringBuilder(org.telegram.messenger.TrustedConfig.getChatListTitle(currentAccount));
                 actionBar.setTitle(ssb, statusDrawable);
+                if (org.telegram.messenger.TrustedConfig.isTitleCentered()) {
+                    actionBar.centerTitle();
+                }
                 updateStatus(UserConfig.getInstance(currentAccount).getCurrentUser(), false);
             }
             if (folderId == 0) {
@@ -13766,7 +13769,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         });
         io.add(R.drawable.msg_channel, "Feed", () -> presentFragment(new TGramFeedActivity()));
         io.add(R.drawable.ghost, org.telegram.messenger.TrustedGhost.isActive() ? "Ghost mode: ON" : "Ghost mode: OFF", () -> org.telegram.messenger.TrustedGhost.setActive(!org.telegram.messenger.TrustedGhost.isActive()));
-        io.add(R.drawable.trusted_glyph, "TGram Settings", () -> presentFragment(new TGramMainActivity()));
+        io.add(R.drawable.trusted_menu_icon, "TGram Settings", () -> presentFragment(new TGramMainActivity()));
         io.addGap();
         io.add(R.drawable.outline_groups_24, getString(R.string.NewGroup), () -> {
             Bundle args = new Bundle();

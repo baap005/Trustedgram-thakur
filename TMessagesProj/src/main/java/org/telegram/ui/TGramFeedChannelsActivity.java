@@ -15,7 +15,7 @@ import java.util.ArrayList;
 /** Feed settings: layout options and which joined channels are shown in the feed. */
 public class TGramFeedChannelsActivity extends UniversalFragment {
 
-    private static final int ID_OPEN = 1, ID_WIDE = 2, ID_ARCHIVE = 3, ID_ALL = 4, ID_NONE = 5, ID_BASE = 100;
+    private static final int ID_OPEN = 1, ID_WIDE = 2, ID_ARCHIVE = 3, ID_ALL = 4, ID_NONE = 5, ID_UNREAD = 6, ID_BASE = 100;
     private final ArrayList<TLRPC.Chat> channels = new ArrayList<>();
 
     @Override
@@ -35,6 +35,7 @@ public class TGramFeedChannelsActivity extends UniversalFragment {
         items.add(UItem.asShadow(null));
         items.add(UItem.asHeader("General"));
         items.add(UItem.asButtonCheck(ID_WIDE, "Wide Posts in Feed", "Posts use the full width of the screen").setChecked(TrustedConfig.isFeedWide()));
+        items.add(UItem.asButtonCheck(ID_UNREAD, "Unread Post Counter", "Show how many posts are unread at the top of the feed").setChecked(TrustedConfig.isFeedUnreadCounter()));
         items.add(UItem.asButtonCheck(ID_ARCHIVE, "Show Chats From Archive", "Also include channels from your archived chats in the feed.").setChecked(TrustedConfig.isFeedArchive()));
         items.add(UItem.asShadow(null));
         items.add(UItem.asHeader("Shown in feed"));
@@ -60,6 +61,9 @@ public class TGramFeedChannelsActivity extends UniversalFragment {
             return;
         } else if (item.id == ID_WIDE) {
             TrustedConfig.setFeedWide(!TrustedConfig.isFeedWide());
+            TrustedFeed.dirty = true;
+        } else if (item.id == ID_UNREAD) {
+            TrustedConfig.setFeedUnreadCounter(!TrustedConfig.isFeedUnreadCounter());
             TrustedFeed.dirty = true;
         } else if (item.id == ID_ARCHIVE) {
             TrustedConfig.setFeedArchive(!TrustedConfig.isFeedArchive());
