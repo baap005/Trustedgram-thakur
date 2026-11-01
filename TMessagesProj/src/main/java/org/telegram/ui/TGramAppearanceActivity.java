@@ -46,6 +46,7 @@ public class TGramAppearanceActivity extends UniversalFragment {
             showRestartRequired();
         } else if (item.id == ID_BLUR) {
             TrustedConfig.setGlassBlur(!TrustedConfig.isGlassBlur());
+            showRestartRequired();
         } else if (item.id == ID_CENTER) {
             TrustedConfig.setTitleCentered(!TrustedConfig.isTitleCentered());
             if (parentLayout != null) TrustedConfig.centerTitles(parentLayout);
@@ -56,6 +57,7 @@ public class TGramAppearanceActivity extends UniversalFragment {
             b.setItems(MODES, (d, which) -> {
                 TrustedConfig.setTitleMode(which);
                 listView.adapter.update(true);
+                showRestartRequired();
             });
             b.setNegativeButton("Cancel", null);
             showDialog(b.create());

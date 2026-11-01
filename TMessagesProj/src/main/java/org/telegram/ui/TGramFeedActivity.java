@@ -2,6 +2,8 @@ package org.telegram.ui;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
 
+import android.app.Activity;
+import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.graphics.Canvas;
@@ -39,6 +41,10 @@ import org.telegram.messenger.TrustedConfig;
 import org.telegram.messenger.TrustedFeed;
 import org.telegram.messenger.TrustedGhost;
 import org.telegram.messenger.MediaController;
+import org.telegram.messenger.NotificationCenter;
+import org.telegram.messenger.SendMessagesHelper;
+import org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble;
+import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.messenger.utils.tlutils.TLKeyboardHelper;
 import org.telegram.tgnet.tl.TL_keyboard;
 import org.telegram.messenger.browser.Browser;
@@ -70,7 +76,7 @@ import java.util.HashMap;
  * - Albums are merged into one post (photos in one grid, one caption), exactly like in the channel.
  * - Long press a post: Open post, Open channel, Copy text, Copy link, Forward.
  */
-public class TGramFeedActivity extends BaseFragment {
+public class TGramFeedActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
     private static final int PER_CHANNEL = 30;
     private static final int MAX_CHANNELS = 30;
@@ -106,6 +112,11 @@ public class TGramFeedActivity extends BaseFragment {
     private final HashMap<Long, Integer> readMax = new HashMap<>();
     private final HashMap<Long, Integer> markedUpTo = new HashMap<>();
     private LinearLayoutManager layoutManager;
+    private ChatActivity callbackProxy;
+    private final HashMap<Long, Integer> oldestId = new HashMap<>();
+    private final java.util.HashSet<Long> endReached = new java.util.HashSet<>();
+    private final java.util.HashSet<String> knownPosts = new java.util.HashSet<>();
+    private boolean loadingOlder;
     private FrameLayout downButton;
     private TextView downCounter;
     private boolean downVisible;
@@ -149,6 +160,101 @@ public class TGramFeedActivity extends BaseFragment {
     }
 
     @Override
+    public boolean onFragmentCreate() {
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.didUpdateReactions);
+        return super.onFragmentCreate();
+    }
+
+    @Override
+    public void onFragmentDestroy() {
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.didUpdateReactions);
+        super.onFragmentDestroy();
+    }
+
+    @Override
+    public void didReceivedNotification(int id, int account, Object... args) {
+        if (id != NotificationCenter.didUpdateReactions || args.length < 3 || !(args[2] instanceof TLRPC.TL_messageReactions)) return;
+        long did = (Long) args[0];
+        int msgId = (Integer) args[1];
+        for (int i = 0; i < items.size(); i++) {
+            Item it = items.get(i);
+            if (it.type != TYPE_POST || -it.post.chat.id != did) continue;
+            boolean changed = false;
+            for (MessageObject m : it.post.messages) {
+                if (m.getId() == msgId) {
+                    MessageObject.updateReactions(m.messageOwner, (TLRPC.TL_messageReactions) args[2]);
+                    m.forceUpdate = true;
+                    m.reactionsChanged = true;
+                    changed = true;
+                }
+            }
+            if (changed) adapter.notifyItemChanged(i);
+        }
+    }
+
+    /**
+     * Invisible ChatActivity that is never shown. SendMessagesHelper.sendCallback() needs one to show its
+     * answers, so every dialog / alert / screen it wants is routed to this feed instead.
+     */
+    private ChatActivity getCallbackProxy() {
+        if (callbackProxy == null) {
+            final TGramFeedActivity feed = this;
+            callbackProxy = new ChatActivity(new Bundle()) {
+                @Override
+                public Activity getParentActivity() {
+                    return feed.getParentActivity();
+                }
+
+                @Override
+                public Dialog showDialog(Dialog dialog) {
+                    return feed.showDialog(dialog);
+                }
+
+                @Override
+                public boolean presentFragment(BaseFragment fragment) {
+                    return feed.presentFragment(fragment);
+                }
+
+                @Override
+                public void showAlert(String name, String message) {
+                    if (feed.getParentActivity() == null || message == null) return;
+                    AlertDialog.Builder b = new AlertDialog.Builder(feed.getParentActivity());
+                    if (name != null) b.setTitle(name);
+                    b.setMessage(message);
+                    b.setPositiveButton("OK", null);
+                    feed.showDialog(b.create());
+                }
+
+                @Override
+                public void showOpenGameAlert(TLRPC.TL_game game, MessageObject messageObject, String urlStr, boolean ask, long uid) {
+                    AlertsCreator.showOpenUrlAlert(feed, urlStr, false, false);
+                }
+            };
+        }
+        return callbackProxy;
+    }
+
+    /** Tap on a reaction chip: add / remove our reaction in place, like in the channel. */
+    private void toggleReaction(MessageObject mo, TLRPC.ReactionCount reaction, Post post) {
+        if (mo == null || reaction == null || reaction.reaction == null) return;
+        if (reaction.reaction instanceof TLRPC.TL_reactionPaid) {
+            openPost(post);
+            return;
+        }
+        ReactionsLayoutInBubble.VisibleReaction clicked = ReactionsLayoutInBubble.VisibleReaction.fromTL(reaction.reaction);
+        ArrayList<ReactionsLayoutInBubble.VisibleReaction> list = new ArrayList<>();
+        if (mo.messageOwner.reactions != null) {
+            for (TLRPC.ReactionCount rc : mo.messageOwner.reactions.results) {
+                if (rc.chosen && rc.reaction != null && !clicked.isSame(rc.reaction) && !(rc.reaction instanceof TLRPC.TL_reactionPaid)) {
+                    list.add(ReactionsLayoutInBubble.VisibleReaction.fromTL(rc.reaction));
+                }
+            }
+        }
+        if (!reaction.chosen) list.add(clicked);
+        SendMessagesHelper.getInstance(currentAccount).sendReaction(mo, list, reaction.chosen ? null : clicked, false, false, this, null);
+    }
+
+    @Override
     public View createView(Context context) {
         // we draw our own floating top bar
         actionBar.setAddToContainer(false);
@@ -178,6 +284,9 @@ public class TGramFeedActivity extends BaseFragment {
             @Override
             public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
                 updateDownButton(true);
+                if (dy < 0 && layoutManager.findFirstVisibleItemPosition() <= 4) {
+                    loadOlder();
+                }
             }
 
             @Override
@@ -319,6 +428,10 @@ public class TGramFeedActivity extends BaseFragment {
         }
         initialScrollDone = false;
         unreadItemIndex = -1;
+        oldestId.clear();
+        endReached.clear();
+        knownPosts.clear();
+        loadingOlder = false;
         posts.clear();
         items.clear();
         adapter.notifyDataSetChanged();
@@ -374,6 +487,21 @@ public class TGramFeedActivity extends BaseFragment {
             Post oldest = channelPosts.get(channelPosts.size() - 1);
             if (oldest.first().messageOwner.grouped_id != 0) channelPosts.remove(oldest);
         }
+        // remember where this channel's next older page starts
+        if (res.messages.size() < PER_CHANNEL) {
+            endReached.add(chat.id);
+        }
+        int minId = Integer.MAX_VALUE;
+        for (Post p : channelPosts) {
+            for (MessageObject m : p.messages) minId = Math.min(minId, m.getId());
+        }
+        if (minId == Integer.MAX_VALUE) {
+            for (TLRPC.Message m : res.messages) minId = Math.min(minId, m.id);
+        }
+        if (minId != Integer.MAX_VALUE) {
+            Integer prev = oldestId.get(chat.id);
+            oldestId.put(chat.id, prev == null ? minId : Math.min(prev, minId));
+        }
         for (Post p : channelPosts) {
             if (p.messages.size() > 1) {
                 // album: oldest photo first, one shared layout
@@ -386,14 +514,15 @@ public class TGramFeedActivity extends BaseFragment {
                 // an album shows the time of its newest part
                 p.date = p.messages.get(p.messages.size() - 1).messageOwner.date;
             }
-            posts.add(p);
+            if (knownPosts.add(p.chat.id + ":" + p.first().getId())) {
+                posts.add(p);
+            }
         }
     }
 
     private void render() {
         // oldest first, newest at the bottom, like a real channel
         Collections.sort(posts, (a, b) -> a.date != b.date ? a.date - b.date : a.first().getId() - b.first().getId());
-        while (posts.size() > MAX_POSTS) posts.remove(0);
 
         items.clear();
         unreadItemIndex = -1;
@@ -431,6 +560,76 @@ public class TGramFeedActivity extends BaseFragment {
         if (posts.isEmpty()) statusView.setText("No posts found.");
         updateSubtitle();
         scrollToStart();
+    }
+
+    private boolean hasOlder() {
+        for (TLRPC.Chat c : loadedChannels) {
+            if (!endReached.contains(c.id)) return true;
+        }
+        return false;
+    }
+
+    /** Scrolled to the top: fetch the next older page of every channel and keep the reading position. */
+    private void loadOlder() {
+        if (loadingOlder || initialLoadPending() || loadedChannels.isEmpty() || !hasOlder()) return;
+        loadingOlder = true;
+        final int account = currentAccount;
+        final int generation = loadGeneration;
+        final ArrayList<TLRPC.Chat> toLoad = new ArrayList<>();
+        for (TLRPC.Chat c : loadedChannels) {
+            if (!endReached.contains(c.id) && oldestId.containsKey(c.id)) toLoad.add(c);
+        }
+        if (toLoad.isEmpty()) {
+            loadingOlder = false;
+            return;
+        }
+        final int[] left = {toLoad.size()};
+        for (final TLRPC.Chat chat : toLoad) {
+            TLRPC.TL_messages_getHistory req = new TLRPC.TL_messages_getHistory();
+            req.peer = MessagesController.getInstance(account).getInputPeer(-chat.id);
+            req.limit = PER_CHANNEL;
+            req.offset_id = oldestId.get(chat.id);
+            ConnectionsManager.getInstance(account).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+                if (generation != loadGeneration) return;
+                if (response instanceof TLRPC.messages_Messages) {
+                    addHistory(account, chat, (TLRPC.messages_Messages) response);
+                } else {
+                    endReached.add(chat.id);
+                }
+                if (--left[0] == 0) {
+                    renderKeepingPosition();
+                    loadingOlder = false;
+                }
+            }));
+        }
+    }
+
+    private boolean initialLoadPending() {
+        return pending > 0;
+    }
+
+    private void renderKeepingPosition() {
+        Post anchor = null;
+        int anchorTop = 0;
+        int first = layoutManager.findFirstVisibleItemPosition();
+        for (int i = Math.max(0, first); i < items.size() && anchor == null; i++) {
+            if (items.get(i).type == TYPE_POST) {
+                View v = layoutManager.findViewByPosition(i);
+                if (v != null) {
+                    anchor = items.get(i).post;
+                    anchorTop = v.getTop() - listView.getPaddingTop();
+                }
+            }
+        }
+        render();
+        if (anchor != null) {
+            for (int i = 0; i < items.size(); i++) {
+                if (items.get(i).type == TYPE_POST && items.get(i).post == anchor) {
+                    layoutManager.scrollToPositionWithOffset(i, anchorTop);
+                    break;
+                }
+            }
+        }
     }
 
     private String dateLabel(int date) {
@@ -958,6 +1157,15 @@ public class TGramFeedActivity extends BaseFragment {
                     TL_keyboard.TL_inlineButtonTypeUrl urlButton = TLKeyboardHelper.getType(button, TL_keyboard.TL_inlineButtonTypeUrl.class);
                     if (urlButton != null && urlButton.url != null) {
                         handleLink(urlButton.url);
+                    } else if (TLKeyboardHelper.getType(button, TL_keyboard.TL_inlineButtonTypeWebView.class) != null
+                        && TLKeyboardHelper.getType(button, TL_keyboard.TL_inlineButtonTypeWebView.class).url != null) {
+                        handleLink(TLKeyboardHelper.getType(button, TL_keyboard.TL_inlineButtonTypeWebView.class).url);
+                    } else if (TLKeyboardHelper.isType(button, TL_keyboard.TL_inlineButtonTypeCallback.class)
+                        || TLKeyboardHelper.isType(button, TL_keyboard.TL_inlineButtonTypeGame.class)
+                        || TLKeyboardHelper.isType(button, TL_keyboard.TL_inlineButtonTypeBuy.class)
+                        || TLKeyboardHelper.isType(button, TL_keyboard.TL_inlineButtonTypeUrlAuth.class)) {
+                        // answered right here: popups, game links, payment forms and 2FA prompts open on top of the feed
+                        SendMessagesHelper.getInstance(currentAccount).sendCallback(true, cell.getMessageObject(), button, getCallbackProxy());
                     } else {
                         openPost(current);
                     }
@@ -982,7 +1190,7 @@ public class TGramFeedActivity extends BaseFragment {
                 }
 
                 public void didPressReaction(ChatMessageCell cell, TLRPC.ReactionCount reaction, boolean longpress, float x, float y) {
-                    if (longpress) showPostActions(current); else openPost(current);
+                    if (longpress) showPostActions(current); else toggleReaction(cell.getPrimaryMessageObject(), reaction, current);
                 }
 
                 public void didPressOther(ChatMessageCell cell, float otherX, float otherY) {
