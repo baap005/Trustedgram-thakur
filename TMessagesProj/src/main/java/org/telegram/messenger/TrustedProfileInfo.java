@@ -27,10 +27,20 @@ public class TrustedProfileInfo {
 
     /** Second line, e.g. "DC1, Miami FL, USA". */
     public static String getDc(TLRPC.User user, TLRPC.Chat chat) {
+        return getDc(user, chat, UserConfig.selectedAccount);
+    }
+
+    public static String getDc(TLRPC.User user, TLRPC.Chat chat, int account) {
         int dc = 0;
         if (user != null && user.photo != null) dc = user.photo.dc_id;
         else if (chat != null && chat.photo != null) dc = chat.photo.dc_id;
-        if (dc <= 0) return "DC unknown";
+        if (dc <= 0 && user != null && UserObject.isUserSelf(user)) {
+            try {
+                dc = org.telegram.tgnet.ConnectionsManager.getInstance(account).getCurrentDatacenterId();
+            } catch (Throwable ignore) {
+            }
+        }
+        if (dc <= 0) return "DC unknown (no profile photo)";
         String name = dc < DC_NAMES.length ? DC_NAMES[dc] : "";
         return "DC" + dc + (name.isEmpty() ? "" : ", " + name);
     }

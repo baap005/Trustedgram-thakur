@@ -138,11 +138,11 @@ public class TrustedConfig {
      * and again shortly after, because a screen builds its top bar a moment after it is added.
      */
     public static void centerTitles(final org.telegram.ui.ActionBar.INavigationLayout layout) {
-        if (layout == null || !isTitleCentered()) return;
+        if (layout == null) return;
         Runnable r = () -> {
             try {
                 for (org.telegram.ui.ActionBar.BaseFragment f : layout.getFragmentStack()) {
-                    if (f != null && f.getActionBar() != null) f.getActionBar().centerTitle();
+                    if (f != null && f.getActionBar() != null) f.getActionBar().setCenterTitleEnabled(isTitleCentered());
                 }
             } catch (Throwable e) {
                 FileLog.e(e);

@@ -90,8 +90,12 @@ public class TGramFeedChannelsActivity extends UniversalFragment {
         FrameLayout wrap = new FrameLayout(context);
         LinearLayout card = new LinearLayout(context);
         card.setOrientation(LinearLayout.VERTICAL);
-        card.setBackground(Theme.createRoundRectDrawable(dp(14), Theme.getColor(Theme.key_windowBackgroundWhite)));
-        wrap.addView(card, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, channels.size() * ROW_DP, Gravity.TOP, 16, 0, 16, 0));
+        android.graphics.drawable.GradientDrawable glass = new android.graphics.drawable.GradientDrawable();
+        glass.setColor(androidx.core.graphics.ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_windowBackgroundWhite), 0xA0));
+        glass.setCornerRadius(dp(22));
+        glass.setStroke(dp(1), 0x33FFFFFF);
+        card.setBackground(glass);
+        wrap.addView(card, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, channels.size() * ROW_DP, Gravity.TOP, 14, 0, 14, 0));
         for (int i = 0; i < channels.size(); i++) {
             final TLRPC.Chat chat = channels.get(i);
             FrameLayout row = new FrameLayout(context);

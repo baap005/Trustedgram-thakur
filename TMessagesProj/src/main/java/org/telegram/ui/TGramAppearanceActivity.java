@@ -40,13 +40,15 @@ public class TGramAppearanceActivity extends UniversalFragment {
     protected void onClick(UItem item, View view, int position, float x, float y) {
         if (item.id == ID_FEEDTAB) {
             TrustedConfig.setFeedTab(!TrustedConfig.isFeedTab());
+            showRestartRequired();
         } else if (item.id == ID_IOS) {
             TrustedConfig.setIosStyle(!TrustedConfig.isIosStyle());
+            showRestartRequired();
         } else if (item.id == ID_BLUR) {
             TrustedConfig.setGlassBlur(!TrustedConfig.isGlassBlur());
         } else if (item.id == ID_CENTER) {
             TrustedConfig.setTitleCentered(!TrustedConfig.isTitleCentered());
-            if (TrustedConfig.isTitleCentered() && parentLayout != null) TrustedConfig.centerTitles(parentLayout);
+            if (parentLayout != null) TrustedConfig.centerTitles(parentLayout);
         } else if (item.id == ID_TITLE) {
             if (getParentActivity() == null) return;
             AlertDialog.Builder b = new AlertDialog.Builder(getParentActivity());

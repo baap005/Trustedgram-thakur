@@ -67,6 +67,10 @@ public abstract class UniversalFragment extends BaseFragment {
                 savedScrollPosition = -1;
             }
         };
+        if (isTGramPage()) {
+            contentView.setBackground(createGlassBackdrop());
+            listView.setBubbleSections();
+        }
         contentView.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
         if (useLargeTitle()) {
@@ -74,6 +78,26 @@ public abstract class UniversalFragment extends BaseFragment {
         }
 
         return fragmentView = contentView;
+    }
+
+    /** True for the TrustedGram settings pages (TGramXxxActivity), which use bubble style glass tiles. */
+    protected boolean isTGramPage() {
+        return getClass().getSimpleName().startsWith("TGram");
+    }
+
+    /** Soft gradient behind the glass tiles so the transparency is actually visible. */
+    protected android.graphics.drawable.Drawable createGlassBackdrop() {
+        final int base = Theme.getColor(Theme.key_windowBackgroundGray);
+        final int accent = Theme.getColor(Theme.key_featuredStickers_addButton);
+        final int top = androidx.core.graphics.ColorUtils.blendARGB(base, accent, 0.22f);
+        final int bottom = androidx.core.graphics.ColorUtils.blendARGB(base, accent, 0.05f);
+        return new android.graphics.drawable.GradientDrawable(android.graphics.drawable.GradientDrawable.Orientation.TOP_BOTTOM, new int[]{top, base, bottom});
+    }
+
+    /** Shows the glass popup telling the user a restart is needed for the setting they just changed. */
+    protected void showRestartRequired() {
+        if (getParentActivity() == null) return;
+        org.telegram.ui.TrustedPopup.show(getParentActivity(), "Restart required", "Restart TrustedGram to apply this change.", "OK", null, null, false);
     }
 
     /** iOS-style large title that collapses into the action bar while scrolling (TGram pages only). */

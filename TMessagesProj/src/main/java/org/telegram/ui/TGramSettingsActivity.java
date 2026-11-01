@@ -36,8 +36,10 @@ public class TGramSettingsActivity extends UniversalFragment {
     protected void onClick(UItem item, View view, int position, float x, float y) {
         if (item.id == ID_STORIES) {
             TrustedConfig.setHideStories(!TrustedConfig.isHideStories());
+            showRestartRequired();
         } else if (item.id == ID_FAB) {
             TrustedConfig.setHideFloatingButton(!TrustedConfig.isHideFloatingButton());
+            showRestartRequired();
         } else if (item.id == ID_IDDC) {
             if (getParentActivity() == null) return;
             AlertDialog.Builder b = new AlertDialog.Builder(getParentActivity());

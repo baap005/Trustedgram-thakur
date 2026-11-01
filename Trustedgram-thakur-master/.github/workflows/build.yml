@@ -1,0 +1,151 @@
+name: Build TrustedGram
+
+on: workflow_dispatch
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    env:
+      API_ID: ${{ secrets.API_ID }}
+      API_HASH: ${{ secrets.API_HASH }}
+      APP_NAME: TrustedGram
+      APP_PACKAGE: app.trustedgram.android
+    steps:
+      - name: Free disk space
+        run: sudo rm -rf /usr/share/dotnet /opt/ghc
+
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Install SDK and NDK
+        run: |
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null || true
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platforms;android-36" "build-tools;36.0.0" "ndk;27.2.12479018"
+
+      - name: Check secrets
+        run: |
+          for v in API_ID API_HASH; do
+            if [ -z "${!v}" ]; then echo "Secret $v is missing"; exit 1; fi
+          done
+
+      - name: Rebrand to TrustedGram
+        run: |
+          set -e
+          BV=TMessagesProj/src/main/java/org/telegram/messenger/BuildVars.java
+
+          sed -i -E "s/(APP_ID[[:space:]]*=[[:space:]]*)[0-9]+;/\1${API_ID};/" $BV
+          sed -i -E "s/(APP_HASH[[:space:]]*=[[:space:]]*)\"[^\"]*\";/\1\"${API_HASH}\";/" $BV
+
+          sed -i -E "s/(DEBUG_VERSION[[:space:]]*=[[:space:]]*)true;/\1false;/" $BV
+          sed -i -E "s/(DEBUG_PRIVATE_VERSION[[:space:]]*=[[:space:]]*)true;/\1false;/" $BV
+
+          find TMessagesProj TMessagesProj_App -name strings.xml -path "*/src/*" | while read f; do
+            sed -i -E "s#(<string name=\"AppName\"[^>]*>)[^<]*(</string>)#\1${APP_NAME}\2#" "$f"
+          done
+
+          if [ -d branding/res ]; then
+            cp -r branding/res/. TMessagesProj/src/main/res/
+            [ -d TMessagesProj_App/src/main/res ] && cp -r branding/res/. TMessagesProj_App/src/main/res/ || true
+          fi
+
+          # The real package name setting lives in gradle.properties
+          sed -i -E "s/^APP_PACKAGE=.*/APP_PACKAGE=${APP_PACKAGE}/" gradle.properties
+
+          # Firebase file must know the new package name
+          python3 - <<'PY'
+          import glob, json, os
+          appid = os.environ["APP_PACKAGE"]
+          old = "org.telegram.messenger"
+          for f in glob.glob('**/google-services.json', recursive=True):
+              d = json.load(open(f)); extra = []
+              for c in d.get('client', []):
+                  pn = c['client_info']['android_client_info']['package_name']
+                  if pn.startswith(old):
+                      c2 = json.loads(json.dumps(c))
+                      c2['client_info']['android_client_info']['package_name'] = appid + pn[len(old):]
+                      extra.append(c2)
+              d['client'] += extra
+              json.dump(d, open(f, 'w'), indent=2)
+              print('patched', f)
+          PY
+
+          grep -n "APP_ID\|DEBUG_VERSION" $BV
+          grep -n "APP_PACKAGE" gradle.properties
+
+      - name: Rename app text (Telegram to TrustedGram)
+        run: |
+          python3 - <<'PY'
+          import re, glob
+          NEW = "TrustedGram"
+          # Texts about Telegram the company/service are left alone on purpose.
+          SKIP = re.compile(
+              r"premium|\bads?\b|advertis|sponsor|revenue|moderator|terms|privacy|support|faq|"
+              r"stars?\b|business|anti-?spam|gift|fragment|\bton\b|passport|track|telegram\\?'s|"
+              r"policy|legal|neither|servers?|cloud|official|verified|translat|bot api|payment|"
+              r"credit|subscri|boost", re.I)
+          LINK = re.compile(r"https?://|t\.me|telegram\.org|telegram\.me|telegram\.dog|@telegram", re.I)
+          STRING = re.compile(r'(<string name="([^"]+)"[^>]*>)(.*?)(</string>)', re.S)
+          count = {"found": 0, "renamed": 0, "left": 0}
+          def fix(m):
+              key, body = m.group(2), m.group(3)
+              if "Telegram" not in body or key.startswith("AppName"):
+                  return m.group(0)
+              count["found"] += 1
+              if SKIP.search(body) or LINK.search(body):
+                  count["left"] += 1
+                  return m.group(0)
+              count["renamed"] += 1
+              return m.group(1) + body.replace("Telegram", NEW) + m.group(4)
+          for path in glob.glob("TMessagesProj/src/main/res/values*/strings.xml"):
+              text = open(path, encoding="utf-8").read()
+              new_text = STRING.sub(fix, text)
+              if new_text != text:
+                  open(path, "w", encoding="utf-8").write(new_text)
+          print(count)
+          PY
+
+          # Footer in Settings: make clear this is an unofficial client
+          sed -i -E 's#(<string name="TelegramVersion">)[^<]*(</string>)#\1TrustedGram (unofficial client) for Android %1$s\2#' TMessagesProj/src/main/res/values/strings.xml
+          grep -n 'name="TelegramVersion"\|name="NoChats"' TMessagesProj/src/main/res/values/strings.xml
+
+      - name: Replace first-screen logo (optional)
+        run: |
+          if [ ! -f branding/intro_logo.png ]; then
+            echo "No branding/intro_logo.png - keeping default first-screen logo"
+            exit 0
+          fi
+          which convert || sudo apt-get install -y imagemagick
+          for d in "mdpi 82 74" "hdpi 123 111" "xhdpi 164 148" "xxhdpi 246 222"; do
+            set -- $d
+            out="TMessagesProj/src/main/res/drawable-$1/intro_tg_plane.webp"
+            if [ -f "$out" ]; then
+              convert branding/intro_logo.png -background none -resize "$2x$3" -gravity center -extent "$2x$3" -define webp:lossless=true "$out"
+              echo "replaced $out"
+            fi
+          done
+
+      - name: Build only for 64-bit ARM phones (much faster)
+        run: |
+          sed -i 's/abiFilters "armeabi-v7a", "arm64-v8a", "x86", "x86_64"/abiFilters "arm64-v8a"/' TMessagesProj_App/build.gradle
+          grep -n "abiFilters" TMessagesProj_App/build.gradle
+
+      - name: List build tasks
+        continue-on-error: true
+        run: ./gradlew :TMessagesProj_App:tasks --all | grep -i "^assemble" | head -40
+
+      - name: Build release APK
+        run: ./gradlew --no-daemon -Dorg.gradle.jvmargs=-Xmx6g :TMessagesProj_App:assembleAfatRelease
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TrustedGram-apk
+          path: "**/build/outputs/apk/**/*.apk"

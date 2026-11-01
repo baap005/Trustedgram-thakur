@@ -663,6 +663,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private int userInfoRow;
     private int channelInfoRow;
     private int usernameRow;
+    private int trustedIdRow = -1;
+    private int trustedDcRow = -1;
     private int notificationsDividerRow;
     private int notificationsRow;
     private int bizHoursRow;
@@ -7327,6 +7329,16 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     }
 
     private boolean processOnClickOrPress(final int position, final View view, final float x, final float y) {
+        if (position == trustedIdRow || position == trustedDcRow) {
+            final TLRPC.User tUser = userId != 0 ? getMessagesController().getUser(userId) : null;
+            final TLRPC.Chat tChat = chatId != 0 ? getMessagesController().getChat(chatId) : null;
+            final String value = position == trustedIdRow ? org.telegram.messenger.TrustedProfileInfo.getId(tUser, tChat) : org.telegram.messenger.TrustedProfileInfo.getDc(tUser, tChat, currentAccount);
+            AndroidUtilities.addToClipboard(value);
+            if (getParentActivity() != null) {
+                android.widget.Toast.makeText(getParentActivity(), "Copied", android.widget.Toast.LENGTH_SHORT).show();
+            }
+            return true;
+        }
         if (position == usernameRow || position == setUsernameRow) {
             final String username;
             final TLRPC.TL_username usernameObj;
@@ -10568,6 +10580,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         locationRow = -1;
         channelInfoRow = -1;
         usernameRow = -1;
+        trustedIdRow = -1;
+        trustedDcRow = -1;
         settingsTimerRow = -1;
         settingsKeyRow = -1;
         notificationsDividerRow = -1;
@@ -10782,6 +10796,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 if (isBot && user != null && user.bot_has_main_app) {
                     botAppRow = rowCount++;
                 }
+                if (user != null && org.telegram.messenger.TrustedProfileInfo.isEnabled()) {
+                    trustedIdRow = rowCount++;
+                    trustedDcRow = rowCount++;
+                }
                 infoEndRow = rowCount - 1;
                 infoSectionRow = rowCount++;
 
@@ -10933,6 +10951,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     notificationsDividerRow = rowCount++;
                 }
                 notificationsRow = rowCount++;
+            }
+            if (currentChat != null && org.telegram.messenger.TrustedProfileInfo.isEnabled()) {
+                trustedIdRow = rowCount++;
+                trustedDcRow = rowCount++;
             }
             if (rowCount > 0) {
                 infoSectionRow = rowCount++;
@@ -13514,7 +13536,15 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     TextDetailCell detailCell = (TextDetailCell) holder.itemView;
                     boolean containsQr = false;
                     boolean containsGift = false;
-                    if (position == birthdayRow) {
+                    if (position == trustedIdRow || position == trustedDcRow) {
+                        final TLRPC.User tUser = userId != 0 ? getMessagesController().getUser(userId) : null;
+                        final TLRPC.Chat tChat = chatId != 0 ? getMessagesController().getChat(chatId) : null;
+                        if (position == trustedIdRow) {
+                            detailCell.setTextAndValue(org.telegram.messenger.TrustedProfileInfo.getId(tUser, tChat), "ID", true);
+                        } else {
+                            detailCell.setTextAndValue(org.telegram.messenger.TrustedProfileInfo.getDc(tUser, tChat, currentAccount), "Data center", false);
+                        }
+                    } else if (position == birthdayRow) {
                         TLRPC.UserFull userFull = getMessagesController().getUserFull(userId);
                         if (userFull != null && userFull.birthday != null) {
                             final boolean today = BirthdayController.isToday(userFull);
@@ -14344,7 +14374,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         position == clearLogsRow || position == switchBackendRow || position == setAvatarRow ||
                         position == addToGroupButtonRow || position == premiumRow || position == premiumGiftingRow ||
                         position == businessRow || position == liteModeRow || position == birthdayRow || position == channelRow ||
-                        position == starsRow || position == tonRow || position == linkedCommunityRow;
+                        position == starsRow || position == tonRow || position == linkedCommunityRow || position == trustedIdRow || position == trustedDcRow;
             }
             if (holder.itemView instanceof UserCell) {
                 UserCell userCell = (UserCell) holder.itemView;
@@ -14372,7 +14402,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             if (position == infoHeaderRow || position == membersHeaderRow || position == settingsSectionRow2 ||
                     position == numberSectionRow || position == helpHeaderRow || position == debugHeaderRow || position == botPermissionsHeader) {
                 return VIEW_TYPE_HEADER;
-            } else if (position == phoneRow || position == locationRow || position == numberRow || position == birthdayRow) {
+            } else if (position == phoneRow || position == locationRow || position == numberRow || position == birthdayRow || position == trustedIdRow || position == trustedDcRow) {
                 return VIEW_TYPE_TEXT_DETAIL;
             } else if (position == usernameRow || position == setUsernameRow) {
                 return VIEW_TYPE_TEXT_DETAIL_MULTILINE;

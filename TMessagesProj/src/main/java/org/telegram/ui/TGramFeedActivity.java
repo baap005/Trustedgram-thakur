@@ -4,6 +4,9 @@ import static org.telegram.messenger.AndroidUtilities.dp;
 
 import android.content.Context;
 import android.content.DialogInterface;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
@@ -35,6 +38,9 @@ import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.TrustedConfig;
 import org.telegram.messenger.TrustedFeed;
 import org.telegram.messenger.TrustedGhost;
+import org.telegram.messenger.MediaController;
+import org.telegram.messenger.utils.tlutils.TLKeyboardHelper;
+import org.telegram.tgnet.tl.TL_keyboard;
 import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
@@ -42,7 +48,9 @@ import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Cells.ChatActionCell;
 import org.telegram.ui.Cells.ChatMessageCell;
+import org.telegram.ui.Cells.ChatUnreadCell;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.LayoutHelper;
@@ -51,6 +59,7 @@ import org.telegram.ui.Components.RecyclerListView;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Calendar;
 import java.util.HashMap;
 
 /**
@@ -63,9 +72,10 @@ import java.util.HashMap;
  */
 public class TGramFeedActivity extends BaseFragment {
 
-    private static final int PER_CHANNEL = 10;
+    private static final int PER_CHANNEL = 30;
     private static final int MAX_CHANNELS = 30;
-    private static final int MAX_POSTS = 80;
+    private static final int MAX_POSTS = 120;
+    private static final int TYPE_POST = 0, TYPE_DATE = 1, TYPE_UNREAD = 2;
 
     private static class Post {
         final ArrayList<MessageObject> messages = new ArrayList<>(); // oldest first
@@ -73,12 +83,34 @@ public class TGramFeedActivity extends BaseFragment {
         TLRPC.Chat chat;
         int date;
 
+        boolean unread;
+
         MessageObject first() {
             return messages.get(0);
         }
+
+        MessageObject last() {
+            return messages.get(messages.size() - 1);
+        }
+    }
+
+    /** One row of the feed: a post, a date tile (Today / Yesterday / date) or the "Unread messages" tile. */
+    private static class Item {
+        int type;
+        Post post;
+        MessageObject dateObject;
     }
 
     private final ArrayList<Post> posts = new ArrayList<>();
+    private final ArrayList<Item> items = new ArrayList<>();
+    private final HashMap<Long, Integer> readMax = new HashMap<>();
+    private final HashMap<Long, Integer> markedUpTo = new HashMap<>();
+    private LinearLayoutManager layoutManager;
+    private FrameLayout downButton;
+    private TextView downCounter;
+    private boolean downVisible;
+    private int unreadItemIndex = -1;
+    private boolean initialScrollDone;
     private final ArrayList<TLRPC.Chat> loadedChannels = new ArrayList<>();
     private RecyclerListView listView;
     private Adapter adapter;
@@ -136,13 +168,24 @@ public class TGramFeedActivity extends BaseFragment {
         final int top = AndroidUtilities.statusBarHeight + dp(62);
 
         listView = new RecyclerListView(context);
-        listView.setLayoutManager(new LinearLayoutManager(context));
+        layoutManager = new LinearLayoutManager(context);
+        listView.setLayoutManager(layoutManager);
         adapter = new Adapter();
         listView.setAdapter(adapter);
         listView.setClipToPadding(false);
         listView.setPadding(0, top, 0, dp(12));
-        listView.setOnItemClickListener((view, position) -> {
-            if (position >= 0 && position < posts.size()) openPost(posts.get(position));
+        listView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
+                updateDownButton(true);
+            }
+
+            @Override
+            public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
+                if (newState == RecyclerView.SCROLL_STATE_IDLE) {
+                    markSeenPosts();
+                }
+            }
         });
         frame.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
@@ -196,11 +239,18 @@ public class TGramFeedActivity extends BaseFragment {
         subtitleView = new TextView(context);
         subtitleView.setTextSize(13);
         subtitleView.setTextColor(barText() & 0xCCFFFFFF);
+        subtitleView.setSingleLine(true);
+        subtitleView.setEllipsize(TextUtils.TruncateAt.END);
+        // keep the title pill clear of the buttons on both sides so it can sit exactly in the middle
+        final int textMax = AndroidUtilities.displaySize.x - 2 * dp(96) - dp(66);
+        subtitleView.setMaxWidth(Math.max(dp(80), textMax));
+        title.setSingleLine(true);
+        title.setMaxWidth(Math.max(dp(80), textMax));
         titles.addView(subtitleView);
         titleRow.addView(titles, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 10, 0, 16, 0));
         View titlePill = pill(context, titleRow);
         titlePill.setOnClickListener(v -> load());
-        FrameLayout.LayoutParams tlp = LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 44, Gravity.TOP | Gravity.LEFT, 60, 0, 0, 0);
+        FrameLayout.LayoutParams tlp = LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 44, Gravity.TOP | Gravity.CENTER_HORIZONTAL);
         tlp.topMargin = barTop;
         frame.addView(titlePill, tlp);
 
@@ -208,14 +258,35 @@ public class TGramFeedActivity extends BaseFragment {
         actions.setOrientation(LinearLayout.HORIZONTAL);
         ImageView read = barIcon(context, R.drawable.msg_markread);
         read.setOnClickListener(v -> confirmMarkAllRead());
-        actions.addView(read, LayoutHelper.createLinear(44, 44));
+        actions.addView(read, LayoutHelper.createLinear(40, 44));
         ImageView settings = barIcon(context, R.drawable.msg_customize);
         settings.setOnClickListener(v -> presentFragment(new TGramFeedChannelsActivity()));
-        actions.addView(settings, LayoutHelper.createLinear(44, 44));
+        actions.addView(settings, LayoutHelper.createLinear(40, 44));
         View actionPill = pill(context, actions);
         FrameLayout.LayoutParams alp = LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 44, Gravity.TOP | Gravity.RIGHT, 0, 0, 8, 0);
         alp.topMargin = barTop;
         frame.addView(actionPill, alp);
+
+        // floating "jump to the bottom" arrow, bottom right, like in channels
+        downButton = new FrameLayout(context);
+        View arrow = new DownArrowView(context);
+        downButton.addView(arrow, LayoutHelper.createFrame(46, 46, Gravity.CENTER));
+        downCounter = new TextView(context);
+        downCounter.setTextSize(12);
+        downCounter.setTypeface(Typeface.DEFAULT_BOLD);
+        downCounter.setGravity(Gravity.CENTER);
+        downCounter.setTextColor(Theme.getColor(Theme.key_chat_goDownButtonCounter));
+        downCounter.setPadding(dp(5), 0, dp(5), 0);
+        GradientDrawable cg = new GradientDrawable();
+        cg.setColor(Theme.getColor(Theme.key_chat_goDownButtonCounterBackground));
+        cg.setCornerRadius(dp(10));
+        downCounter.setBackground(cg);
+        downCounter.setVisibility(View.GONE);
+        downButton.addView(downCounter, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 20, Gravity.TOP | Gravity.CENTER_HORIZONTAL));
+        downButton.setVisibility(View.GONE);
+        downButton.setAlpha(0f);
+        downButton.setOnClickListener(v -> jumpToBottom());
+        frame.addView(downButton, LayoutHelper.createFrame(56, 62, Gravity.BOTTOM | Gravity.RIGHT, 0, 0, 10, 14));
 
         fragmentView = frame;
         load();
@@ -239,8 +310,19 @@ public class TGramFeedActivity extends BaseFragment {
             if (TrustedFeed.isIncluded(c.id) && loadedChannels.size() < MAX_CHANNELS) loadedChannels.add(c);
         }
         final int generation = ++loadGeneration;
+        MessagesController readController = MessagesController.getInstance(account);
+        readMax.clear();
+        markedUpTo.clear();
+        for (TLRPC.Chat c : loadedChannels) {
+            TLRPC.Dialog d = readController.dialogs_dict.get(-c.id);
+            readMax.put(c.id, d != null ? d.read_inbox_max_id : Integer.MAX_VALUE);
+        }
+        initialScrollDone = false;
+        unreadItemIndex = -1;
         posts.clear();
+        items.clear();
         adapter.notifyDataSetChanged();
+        updateDownButton(false);
         updateSubtitle();
         if (loadedChannels.isEmpty()) {
             statusView.setText("Your feed is empty.\nTap the settings icon at the top to choose channels.");
@@ -287,6 +369,11 @@ public class TGramFeedActivity extends BaseFragment {
             }
             p.messages.add(mo);
         }
+        // the oldest album of a full page may be cut in half: drop it instead of showing half an album
+        if (res.messages.size() >= PER_CHANNEL && !channelPosts.isEmpty()) {
+            Post oldest = channelPosts.get(channelPosts.size() - 1);
+            if (oldest.first().messageOwner.grouped_id != 0) channelPosts.remove(oldest);
+        }
         for (Post p : channelPosts) {
             if (p.messages.size() > 1) {
                 // album: oldest photo first, one shared layout
@@ -304,13 +391,242 @@ public class TGramFeedActivity extends BaseFragment {
     }
 
     private void render() {
-        Collections.sort(posts, (a, b) -> b.date - a.date);
-        while (posts.size() > MAX_POSTS) posts.remove(posts.size() - 1);
+        // oldest first, newest at the bottom, like a real channel
+        Collections.sort(posts, (a, b) -> a.date != b.date ? a.date - b.date : a.first().getId() - b.first().getId());
+        while (posts.size() > MAX_POSTS) posts.remove(0);
+
+        items.clear();
+        unreadItemIndex = -1;
+        int lastDay = -1;
+        int unreadPosts = 0;
+        Calendar cal = Calendar.getInstance();
+        for (Post p : posts) {
+            Integer rm = readMax.get(p.chat.id);
+            p.unread = rm != null && p.last().getId() > rm;
+            cal.setTimeInMillis(p.date * 1000L);
+            int day = cal.get(Calendar.YEAR) * 1000 + cal.get(Calendar.DAY_OF_YEAR);
+            if (day != lastDay) {
+                lastDay = day;
+                Item d = new Item();
+                d.type = TYPE_DATE;
+                d.dateObject = createDateObject(p.date);
+                items.add(d);
+            }
+            if (p.unread) {
+                unreadPosts++;
+                if (unreadItemIndex < 0) {
+                    Item u = new Item();
+                    u.type = TYPE_UNREAD;
+                    unreadItemIndex = items.size();
+                    items.add(u);
+                }
+            }
+            Item it = new Item();
+            it.type = TYPE_POST;
+            it.post = p;
+            items.add(it);
+        }
         adapter.notifyDataSetChanged();
         statusView.setVisibility(posts.isEmpty() ? View.VISIBLE : View.GONE);
         if (posts.isEmpty()) statusView.setText("No posts found.");
         updateSubtitle();
+        scrollToStart();
     }
+
+    private String dateLabel(int date) {
+        Calendar now = Calendar.getInstance();
+        Calendar then = Calendar.getInstance();
+        then.setTimeInMillis(date * 1000L);
+        Calendar yesterday = Calendar.getInstance();
+        yesterday.add(Calendar.DAY_OF_YEAR, -1);
+        if (now.get(Calendar.YEAR) == then.get(Calendar.YEAR) && now.get(Calendar.DAY_OF_YEAR) == then.get(Calendar.DAY_OF_YEAR)) {
+            return "Today";
+        }
+        if (yesterday.get(Calendar.YEAR) == then.get(Calendar.YEAR) && yesterday.get(Calendar.DAY_OF_YEAR) == then.get(Calendar.DAY_OF_YEAR)) {
+            return "Yesterday";
+        }
+        return LocaleController.formatDateChat(date);
+    }
+
+    private MessageObject createDateObject(int date) {
+        TLRPC.Message dateMsg = new TLRPC.TL_message();
+        dateMsg.message = dateLabel(date);
+        dateMsg.id = 0;
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTimeInMillis(date * 1000L);
+        calendar.set(Calendar.HOUR_OF_DAY, 0);
+        calendar.set(Calendar.MINUTE, 0);
+        calendar.set(Calendar.SECOND, 0);
+        calendar.set(Calendar.MILLISECOND, 0);
+        dateMsg.date = (int) (calendar.getTimeInMillis() / 1000);
+        MessageObject dateObj = new MessageObject(currentAccount, dateMsg, false, false);
+        dateObj.type = MessageObject.TYPE_DATE;
+        dateObj.contentType = 1;
+        dateObj.isDateObject = true;
+        return dateObj;
+    }
+
+    /** Opens the feed where the user stopped reading (at the "Unread messages" tile), or at the newest post when all is read. */
+    private void scrollToStart() {
+        if (items.isEmpty() || initialScrollDone) return;
+        initialScrollDone = true;
+        listView.post(() -> {
+            if (items.isEmpty()) return;
+            if (unreadItemIndex >= 0) {
+                layoutManager.scrollToPositionWithOffset(unreadItemIndex, dp(8));
+                listView.postDelayed(() -> {
+                    updateDownButton(false);
+                    markSeenPosts();
+                }, 150);
+            } else {
+                alignLastToBottom();
+            }
+        });
+    }
+
+    /** Puts the newest post with its bottom edge at the bottom of the list. */
+    private void alignLastToBottom() {
+        if (items.isEmpty()) return;
+        final int target = items.size() - 1;
+        layoutManager.scrollToPositionWithOffset(target, 0);
+        listView.post(() -> {
+            View v = layoutManager.findViewByPosition(target);
+            if (v != null) {
+                int avail = listView.getHeight() - listView.getPaddingTop() - listView.getPaddingBottom();
+                layoutManager.scrollToPositionWithOffset(target, avail - v.getHeight());
+            }
+            listView.postDelayed(() -> {
+                updateDownButton(false);
+                markSeenPosts();
+            }, 150);
+        });
+    }
+
+    // ------------------------------------------------------------------ read state + jump arrow
+
+    /** Posts that scrolled into view count as read, exactly like in a channel (Ghost mode still blocks the read receipt). */
+    private void markSeenPosts() {
+        if (layoutManager == null || items.isEmpty()) return;
+        int last = layoutManager.findLastVisibleItemPosition();
+        if (last < 0) return;
+        HashMap<Long, Integer> maxIds = new HashMap<>();
+        HashMap<Long, Integer> counts = new HashMap<>();
+        HashMap<Long, Integer> dates = new HashMap<>();
+        for (int i = 0; i <= last && i < items.size(); i++) {
+            Item it = items.get(i);
+            if (it.type != TYPE_POST || !it.post.unread) continue;
+            long cid = it.post.chat.id;
+            int id = it.post.last().getId();
+            Integer done = markedUpTo.get(cid);
+            if (done != null && id <= done) continue;
+            Integer cur = maxIds.get(cid);
+            if (cur == null || id > cur) {
+                maxIds.put(cid, id);
+                dates.put(cid, it.post.date);
+            }
+            Integer n = counts.get(cid);
+            counts.put(cid, (n == null ? 0 : n) + it.post.messages.size());
+        }
+        MessagesController mc = MessagesController.getInstance(currentAccount);
+        for (Long cid : maxIds.keySet()) {
+            int id = maxIds.get(cid);
+            markedUpTo.put(cid, id);
+            mc.markDialogAsRead(-cid, id, id, dates.get(cid), false, 0, counts.get(cid), true, 0);
+        }
+        if (!maxIds.isEmpty()) {
+            AndroidUtilities.runOnUIThread(this::updateSubtitle, 600);
+            updateDownButton(true);
+        }
+    }
+
+    private int unreadBelow() {
+        int last = layoutManager.findLastVisibleItemPosition();
+        int total = 0;
+        for (int i = Math.max(0, last + 1); i < items.size(); i++) {
+            Item it = items.get(i);
+            if (it.type != TYPE_POST || !it.post.unread) continue;
+            Integer done = markedUpTo.get(it.post.chat.id);
+            if (done != null && it.post.last().getId() <= done) continue;
+            total++;
+        }
+        return total;
+    }
+
+    private void updateDownButton(boolean animated) {
+        if (downButton == null || layoutManager == null) return;
+        int remaining = listView.computeVerticalScrollRange() - listView.computeVerticalScrollOffset() - listView.computeVerticalScrollExtent();
+        boolean show = !items.isEmpty() && remaining > dp(160);
+        int below = show ? unreadBelow() : 0;
+        if (below > 0) {
+            downCounter.setText(String.valueOf(below));
+            downCounter.setVisibility(View.VISIBLE);
+        } else {
+            downCounter.setVisibility(View.GONE);
+        }
+        if (show == downVisible) return;
+        downVisible = show;
+        downButton.animate().cancel();
+        if (show) {
+            downButton.setVisibility(View.VISIBLE);
+            if (animated) {
+                downButton.animate().alpha(1f).translationY(0).setDuration(180).start();
+            } else {
+                downButton.setAlpha(1f);
+                downButton.setTranslationY(0);
+            }
+        } else if (animated) {
+            downButton.animate().alpha(0f).translationY(dp(20)).setDuration(180).withEndAction(() -> {
+                if (!downVisible) downButton.setVisibility(View.GONE);
+            }).start();
+        } else {
+            downButton.setAlpha(0f);
+            downButton.setVisibility(View.GONE);
+        }
+    }
+
+    private void jumpToBottom() {
+        if (items.isEmpty()) return;
+        int target = items.size() - 1;
+        int last = layoutManager.findLastVisibleItemPosition();
+        if (target - last > 12) {
+            alignLastToBottom();
+        } else {
+            listView.smoothScrollToPosition(target);
+        }
+    }
+
+    /** Round button with a down chevron, drawn by hand. */
+    private static class DownArrowView extends View {
+        private final Paint fill = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint line = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Path chevron = new Path();
+
+        DownArrowView(Context c) {
+            super(c);
+            setLayerType(LAYER_TYPE_SOFTWARE, null);
+        }
+
+        @Override
+        protected void onDraw(Canvas canvas) {
+            float cx = getWidth() / 2f, cy = getHeight() / 2f, r = dp(21);
+            fill.setStyle(Paint.Style.FILL);
+            fill.setShadowLayer(dp(3), 0, dp(1), 0x33000000);
+            fill.setColor(Theme.getColor(Theme.key_chat_goDownButton));
+            canvas.drawCircle(cx, cy, r, fill);
+            line.setStyle(Paint.Style.STROKE);
+            line.setStrokeWidth(dp(2));
+            line.setStrokeCap(Paint.Cap.ROUND);
+            line.setStrokeJoin(Paint.Join.ROUND);
+            line.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon));
+            chevron.reset();
+            chevron.moveTo(cx - dp(7), cy - dp(3));
+            chevron.lineTo(cx, cy + dp(4));
+            chevron.lineTo(cx + dp(7), cy - dp(3));
+            canvas.drawPath(chevron, line);
+        }
+    }
+
+    // ------------------------------------------------------------------ unread counter
 
     private int countUnread() {
         int total = 0;
@@ -351,7 +667,9 @@ public class TGramFeedActivity extends BaseFragment {
             if (d == null || d.unread_count <= 0) continue;
             TrustedGhost.allowNextRead();
             mc.markDialogAsRead(-c.id, d.top_message, d.top_message, d.last_message_date, false, 0, d.unread_count, true, 0);
+            markedUpTo.put(c.id, d.top_message);
         }
+        updateDownButton(true);
         AndroidUtilities.runOnUIThread(this::updateSubtitle, 600);
     }
 
@@ -482,25 +800,67 @@ public class TGramFeedActivity extends BaseFragment {
     private class Adapter extends RecyclerListView.SelectionAdapter {
         @Override
         public boolean isEnabled(RecyclerView.ViewHolder holder) {
-            return true;
+            return holder.getItemViewType() == TYPE_POST;
         }
 
         @Override
         public int getItemCount() {
-            return posts.size();
+            return items.size();
+        }
+
+        @Override
+        public int getItemViewType(int position) {
+            return items.get(position).type;
         }
 
         @Override
         public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-            PostView view = new PostView(parent.getContext());
+            View view;
+            if (viewType == TYPE_DATE) {
+                view = new ChatActionCell(parent.getContext());
+            } else if (viewType == TYPE_UNREAD) {
+                view = new ChatUnreadCell(parent.getContext(), null);
+            } else {
+                view = new PostView(parent.getContext());
+            }
             view.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.WRAP_CONTENT));
             return new RecyclerListView.Holder(view);
         }
 
         @Override
         public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
-            ((PostView) holder.itemView).bind(posts.get(position));
+            Item item = items.get(position);
+            if (item.type == TYPE_DATE) {
+                ((ChatActionCell) holder.itemView).setMessageObject(item.dateObject);
+            } else if (item.type == TYPE_UNREAD) {
+                ((ChatUnreadCell) holder.itemView).setText(LocaleController.getString(R.string.UnreadMessages));
+            } else {
+                ((PostView) holder.itemView).bind(item.post);
+            }
         }
+    }
+
+    private void openPhotoViewer(ChatMessageCell cell) {
+        MessageObject mo = cell.getMessageObject();
+        if (mo == null || current(cell) == null || getParentActivity() == null) return;
+        Post p = current(cell);
+        PhotoViewer viewer = PhotoViewer.getInstance();
+        viewer.setParentActivity(this);
+        boolean opened;
+        if (p.messages.size() > 1) {
+            opened = viewer.openPhoto(new ArrayList<>(p.messages), Math.max(0, p.messages.indexOf(mo)), -p.chat.id, 0, 0, new PhotoViewer.EmptyPhotoViewerProvider());
+        } else {
+            opened = viewer.openPhoto(mo, null, -p.chat.id, 0, 0, new PhotoViewer.EmptyPhotoViewerProvider());
+        }
+        if (!opened) openPost(p);
+    }
+
+    private Post current(ChatMessageCell cell) {
+        View parent = cell;
+        while (parent != null && !(parent instanceof PostView)) {
+            parent = parent.getParent() instanceof View ? (View) parent.getParent() : null;
+        }
+        return parent != null ? ((PostView) parent).current : null;
     }
 
     private class PostView extends LinearLayout {
@@ -568,15 +928,74 @@ public class TGramFeedActivity extends BaseFragment {
                 }
 
                 public void didPressImage(ChatMessageCell cell, float x, float y, boolean fullPreview) {
-                    openPost(current);
+                    openPhotoViewer(cell);
                 }
 
                 public void didPressImage(ChatMessageCell cell, float x, float y) {
-                    openPost(current);
+                    openPhotoViewer(cell);
                 }
 
                 public void didPressSideButton(ChatMessageCell cell) {
                     if (current != null) forward(current);
+                }
+
+                // link preview / instant view button: open the page
+                public void didPressInstantButton(ChatMessageCell cell, int type) {
+                    MessageObject mo = cell.getMessageObject();
+                    if (mo != null && mo.messageOwner != null && mo.messageOwner.media != null && mo.messageOwner.media.webpage != null && mo.messageOwner.media.webpage.url != null) {
+                        Browser.openUrl(getParentActivity(), mo.messageOwner.media.webpage.url);
+                    } else {
+                        openPost(current);
+                    }
+                }
+
+                public void didPressWebPage(ChatMessageCell cell, TLRPC.WebPage webpage, String url, boolean safe) {
+                    Browser.openUrl(getParentActivity(), url != null ? url : webpage != null ? webpage.url : null);
+                }
+
+                // inline buttons: link buttons open the link, the rest need the channel itself
+                public void didPressBotButton(ChatMessageCell cell, TL_keyboard.KeyboardButtonProto button) {
+                    TL_keyboard.TL_inlineButtonTypeUrl urlButton = TLKeyboardHelper.getType(button, TL_keyboard.TL_inlineButtonTypeUrl.class);
+                    if (urlButton != null && urlButton.url != null) {
+                        handleLink(urlButton.url);
+                    } else {
+                        openPost(current);
+                    }
+                }
+
+                public void didPressReplyMessage(ChatMessageCell cell, int id, float x, float y, boolean longpress) {
+                    if (longpress) showPostActions(current); else openPost(current);
+                }
+
+                public void didPressViaBot(ChatMessageCell cell, String username) {
+                    if (username != null && getParentActivity() != null) {
+                        MessagesController.getInstance(currentAccount).openByUserName(username, TGramFeedActivity.this, 0);
+                    }
+                }
+
+                public void didPressChannelAvatar(ChatMessageCell cell, TLRPC.Chat chat, int postId, float touchX, float touchY, boolean asForward) {
+                    openChannel(current);
+                }
+
+                public void didPressCommentButton(ChatMessageCell cell) {
+                    openPost(current);
+                }
+
+                public void didPressReaction(ChatMessageCell cell, TLRPC.ReactionCount reaction, boolean longpress, float x, float y) {
+                    if (longpress) showPostActions(current); else openPost(current);
+                }
+
+                public void didPressOther(ChatMessageCell cell, float otherX, float otherY) {
+                    openPost(current);
+                }
+
+                public boolean needPlayMessage(ChatMessageCell cell, MessageObject messageObject, boolean muted) {
+                    try {
+                        return MediaController.getInstance().playMessage(messageObject);
+                    } catch (Throwable e) {
+                        org.telegram.messenger.FileLog.e(e);
+                        return false;
+                    }
                 }
             };
         }
@@ -599,7 +1018,7 @@ public class TGramFeedActivity extends BaseFragment {
             avatarDrawable.setInfo(post.chat);
             avatar.setForUserOrChat(post.chat, avatarDrawable);
             nameView.setText(post.chat.title);
-            dateView.setText(LocaleController.formatDateChat(post.date));
+            dateView.setText(LocaleController.getInstance().getFormatterDay().format(post.date * 1000L));
             int n = post.messages.size();
             for (int i = 0; i < cells.size() || i < n; i++) {
                 if (i >= n) {

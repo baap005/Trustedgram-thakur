@@ -446,4 +446,40 @@ public class UniversalRecyclerView extends RecyclerListView {
             topPadding
         );
     }
+
+    private static final android.graphics.Paint glassFill = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
+    private static final android.graphics.Paint glassStroke = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
+    private static final android.graphics.Path glassPath = new android.graphics.Path();
+    private static final float[] glassRadii = new float[8];
+
+    /** Rounded, translucent "glass" tiles for the TrustedGram settings pages. */
+    public static void drawGlassRect(android.graphics.Canvas canvas, android.graphics.RectF rect, float topRadius, float bottomRadius, float alpha) {
+        final int base = Theme.getColor(Theme.key_windowBackgroundWhite);
+        final boolean dark = AndroidUtilities.computePerceivedBrightness(base) < 0.5f;
+        glassFill.setStyle(android.graphics.Paint.Style.FILL);
+        glassFill.setColor(androidx.core.graphics.ColorUtils.setAlphaComponent(base, (int) ((dark ? 0x99 : 0xB8) * alpha)));
+        glassStroke.setStyle(android.graphics.Paint.Style.STROKE);
+        glassStroke.setStrokeWidth(dp(1));
+        glassStroke.setColor(androidx.core.graphics.ColorUtils.setAlphaComponent(0xFFFFFFFF, (int) ((dark ? 0x26 : 0x99) * alpha)));
+        glassRadii[0] = glassRadii[1] = glassRadii[2] = glassRadii[3] = topRadius;
+        glassRadii[4] = glassRadii[5] = glassRadii[6] = glassRadii[7] = bottomRadius;
+        glassPath.rewind();
+        glassPath.addRoundRect(rect, glassRadii, android.graphics.Path.Direction.CW);
+        canvas.drawPath(glassPath, glassFill);
+        canvas.drawPath(glassPath, glassStroke);
+    }
+
+    public void setBubbleSections() {
+        super.setSections(
+            view -> {
+                if (view.getParent() != this) return false;
+                final ViewHolder viewHolder = getChildViewHolder(view);
+                return !UniversalAdapter.isShadow(viewHolder.getItemViewType());
+            },
+            UniversalAdapter::isShadow,
+            dp(14), dp(22),
+            UniversalRecyclerView::drawGlassRect,
+            false
+        );
+    }
 }
