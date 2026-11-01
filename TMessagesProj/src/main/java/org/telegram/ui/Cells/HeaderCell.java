@@ -24,6 +24,7 @@ import androidx.core.view.ViewCompat;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.TrustedConfig;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AnimatedTextView;
@@ -44,6 +45,7 @@ public class HeaderCell extends FrameLayout {
     private int height = 40;
     private final Theme.ResourcesProvider resourcesProvider;
     private final boolean animated;
+    private boolean iosHeader;
 
     public HeaderCell(Context context) {
         this(context, Theme.key_windowBackgroundWhiteBlueHeader, 20, 7, false, null);
@@ -79,6 +81,11 @@ public class HeaderCell extends FrameLayout {
         this.padding = padding;
         this.bottomMargin = bottomMargin;
         this.animated = animated;
+        if (TrustedConfig.isIosStyle() && textColorKey == Theme.key_windowBackgroundWhiteBlueHeader) {
+            // iOS section headers: small, regular weight, grey, uppercase
+            iosHeader = true;
+            textColorKey = Theme.key_windowBackgroundWhiteGrayText2;
+        }
 
         if (animated) {
             animatedTextView = new AnimatedTextView(getContext());
@@ -91,8 +98,10 @@ public class HeaderCell extends FrameLayout {
             addView(animatedTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, height - topMargin, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, padding, topMargin, padding, text2 ? 0 : bottomMargin));
         } else {
             textView = new TextView(getContext());
-            textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-            textView.setTypeface(AndroidUtilities.bold());
+            textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, iosHeader ? 13 : 14);
+            if (!iosHeader) {
+                textView.setTypeface(AndroidUtilities.bold());
+            }
             textView.setEllipsize(TextUtils.TruncateAt.END);
             textView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
             textView.setMinHeight(AndroidUtilities.dp(height - topMargin));
@@ -188,6 +197,9 @@ public class HeaderCell extends FrameLayout {
             animatedTextView.setText(text, animate);
         } else {
             textView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
+            if (iosHeader && text != null && !(text instanceof android.text.Spanned)) {
+                text = text.toString().toUpperCase();
+            }
             textView.setText(text);
         }
     }
