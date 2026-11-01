@@ -56,4 +56,16 @@ public class TrustedFeed {
         }
         return out;
     }
+
+    /** Unread posts in the channels that are shown in the feed. */
+    public static int getUnreadCount(int account) {
+        int total = 0;
+        MessagesController mc = MessagesController.getInstance(account);
+        for (TLRPC.Chat c : getChannels(account)) {
+            if (!isIncluded(c.id)) continue;
+            TLRPC.Dialog d = mc.dialogs_dict.get(-c.id);
+            if (d != null) total += Math.max(0, d.unread_count);
+        }
+        return total;
+    }
 }

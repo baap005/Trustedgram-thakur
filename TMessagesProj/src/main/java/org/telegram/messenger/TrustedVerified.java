@@ -11,8 +11,9 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Accounts you mark as verified in the admin panel. They get Telegram's verified flag inside the app, and the
- * badge image itself is the TrustedGram logo badge (the verified_area / verified_check / verified_profile images).
+ * Accounts you mark as verified in the admin panel. They get Telegram's verified flag inside the app, so the
+ * normal Telegram verified badge is shown. (No custom badge image: the default verified_area / verified_check /
+ * verified_profile drawables must be the original ones - see restore_default_badge.sh.)
  */
 public class TrustedVerified {
 

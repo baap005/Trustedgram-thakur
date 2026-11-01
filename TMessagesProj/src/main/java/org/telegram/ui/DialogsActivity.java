@@ -3005,6 +3005,20 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
     private Drawable premiumStar;
 
+    /** Re-applies the TrustedGram title (app name / account first name) after it was changed in TGram Settings. */
+    private String lastTrustedTitle;
+    private void updateTrustedTitle() {
+        if (actionBar == null || statusDrawable == null || folderId != 0 || communityId != 0) return;
+        String title = org.telegram.messenger.TrustedConfig.getChatListTitle(currentAccount);
+        if (title.equals(lastTrustedTitle)) return;
+        lastTrustedTitle = title;
+        actionBar.setTitle(new SpannableStringBuilder(title), statusDrawable);
+        updateStatus(UserConfig.getInstance(currentAccount).getCurrentUser(), false);
+        if (org.telegram.messenger.TrustedConfig.isTitleCentered()) {
+            actionBar.centerTitle();
+        }
+    }
+
     public void updateStatus(TLRPC.User user, boolean animated) {
         if (dialogStoriesCell != null) {
             dialogStoriesCell.updateStatus(user, animated);
@@ -3516,7 +3530,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 logoDrawable = context.getResources().getDrawable(R.drawable.telegram_logo_2).mutate();
                 logoDrawable.setBounds(0, dp(2), logoDrawable.getIntrinsicWidth(), dp(2) + logoDrawable.getIntrinsicHeight());
                 logoDrawable.setColorFilter(getThemedColor(Theme.key_telegram_color_dialogsLogo), PorterDuff.Mode.MULTIPLY);
-                SpannableStringBuilder ssb = new SpannableStringBuilder(org.telegram.messenger.TrustedConfig.getChatListTitle(currentAccount));
+                lastTrustedTitle = org.telegram.messenger.TrustedConfig.getChatListTitle(currentAccount);
+                SpannableStringBuilder ssb = new SpannableStringBuilder(lastTrustedTitle);
                 actionBar.setTitle(ssb, statusDrawable);
                 if (org.telegram.messenger.TrustedConfig.isTitleCentered()) {
                     actionBar.centerTitle();
@@ -7022,6 +7037,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     @Override
     public void onResume() {
         super.onResume();
+        updateTrustedTitle();
         if (dialogStoriesCell != null) {
             dialogStoriesCell.onResume();
         }
@@ -8848,7 +8864,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     }
 
     private void updateFloatingButtonVisibility(boolean animated) {
-        final boolean isVisible = !(onlySelect && initialDialogsType != 10 || folderId != 0 || communityId != 0 || inPreviewMode || (searching && !onlySelect) || floatingButtonHidden);
+        final boolean isVisible = !(onlySelect && initialDialogsType != 10 || folderId != 0 || communityId != 0 || inPreviewMode || (searching && !onlySelect) || floatingButtonHidden || org.telegram.messenger.TrustedConfig.isHideFloatingButton());
 
         if (floatingButton3 != null) {
             floatingButton3.setButtonVisible(isVisible, animated);
@@ -12809,6 +12825,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             onlySelfStories = getStoriesController().hasOnlySelfStories();
         }
 
+        if (org.telegram.messenger.TrustedConfig.isHideStories() && !isArchive()) {
+            newVisibility = false;
+            onlySelfStories = false;
+        }
         hasOnlySlefStories = onlySelfStories;
 
         boolean oldStoriesCellVisibility = dialogStoriesCellVisible;
@@ -13767,7 +13787,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 presentFragment(new ThemeActivity(ThemeActivity.THEME_TYPE_NIGHT));
             });
         });
-        io.add(R.drawable.msg_channel, "Feed", () -> presentFragment(new TGramFeedActivity()));
+        int tgFeedUnread = org.telegram.messenger.TrustedConfig.isFeedUnreadCounter() ? org.telegram.messenger.TrustedFeed.getUnreadCount(currentAccount) : 0;
+        io.add(R.drawable.msg_channel, tgFeedUnread > 0 ? "Feed (" + tgFeedUnread + ")" : "Feed", () -> presentFragment(new TGramFeedActivity()));
         io.add(R.drawable.ghost, org.telegram.messenger.TrustedGhost.isActive() ? "Ghost mode: ON" : "Ghost mode: OFF", () -> org.telegram.messenger.TrustedGhost.setActive(!org.telegram.messenger.TrustedGhost.isActive()));
         io.add(R.drawable.trusted_menu_icon, "TGram Settings", () -> presentFragment(new TGramMainActivity()));
         io.addGap();

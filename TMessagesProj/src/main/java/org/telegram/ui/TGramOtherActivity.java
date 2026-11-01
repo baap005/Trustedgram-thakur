@@ -24,7 +24,7 @@ public class TGramOtherActivity extends UniversalFragment {
         items.add(UItem.asHeader("About"));
         items.add(UItem.asButton(ID_VERSION, "Build number", TrustedConfig.VERSION_NAME + " (" + TrustedConfig.VERSION_CODE + ")"));
         items.add(UItem.asButton(ID_CHECK, "Check for updates"));
-        items.add(UItem.asShadow("Use the build number in the admin panel when you publish an update."));
+        items.add(UItem.asShadow(null));
     }
 
     @Override

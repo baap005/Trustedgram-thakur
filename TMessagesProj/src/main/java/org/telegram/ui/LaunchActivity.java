@@ -547,6 +547,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         actionBarLayout.setDrawerLayoutContainer(drawerLayoutContainer);
         actionBarLayout.setFragmentStack(mainFragmentsStack);
         actionBarLayout.setFragmentStackChangedListener(() -> {
+            org.telegram.messenger.TrustedConfig.centerTitles(actionBarLayout);
             checkSystemBarColors(true, false);
             if (getLastFragment() != null && getLastFragment().getLastStoryViewer() != null) {
                 getLastFragment().getLastStoryViewer().updatePlayingMode();
@@ -7086,6 +7087,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         isResumed = true;
         pipActivityHandler.onResume();
         org.telegram.messenger.TrustedConfig.check(this);
+        org.telegram.messenger.TrustedConfig.centerTitles(actionBarLayout);
         if (onResumeStaticCallback != null) {
             onResumeStaticCallback.run();
             onResumeStaticCallback = null;

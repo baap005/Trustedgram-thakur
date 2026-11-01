@@ -30,8 +30,8 @@ public class TrustedConfig {
      * Build number of THIS build. Raise it by 1 for every release and put the same number in the
      * admin panel (App update > Latest version code). It is shown in TGram Settings.
      */
-    public static final int VERSION_CODE = 1;
-    public static final String VERSION_NAME = "1.0";
+    public static final int VERSION_CODE = 3;
+    public static final String VERSION_NAME = "1.3";
 
     private static long lastFetch;
     private static Dialog shownDialog;
@@ -56,7 +56,7 @@ public class TrustedConfig {
         prefs().edit().putString("title_text", text == null ? "" : text.trim()).apply();
     }
 
-    /** 0 = app name, 1 = first name of the account, 2 = custom text. */
+    /** 0 = app name, 1 = first name of the account. */
     public static int getTitleMode() {
         return prefs().getInt("title_mode", 0);
     }
@@ -87,10 +87,53 @@ public class TrustedConfig {
         if (mode == 1) {
             TLRPC.User u = UserConfig.getInstance(account).getCurrentUser();
             if (u != null && u.first_name != null && !u.first_name.trim().isEmpty()) return u.first_name.trim();
-        } else if (mode == 2) {
-            return getTitleText();
         }
         return "TrustedGram";
+    }
+
+    /** Show ID and DC in profiles: 0 = hide, 1 = Telegram API id, 2 = Bot API id. */
+    public static int getIdDcMode() {
+        return prefs().getInt("id_dc_mode", 1);
+    }
+
+    public static void setIdDcMode(int mode) {
+        prefs().edit().putInt("id_dc_mode", mode).apply();
+    }
+
+    public static boolean isHideStories() {
+        return prefs().getBoolean("hide_stories", false);
+    }
+
+    public static void setHideStories(boolean v) {
+        prefs().edit().putBoolean("hide_stories", v).apply();
+    }
+
+    public static boolean isHideFloatingButton() {
+        return prefs().getBoolean("hide_fab", false);
+    }
+
+    public static void setHideFloatingButton(boolean v) {
+        prefs().edit().putBoolean("hide_fab", v).apply();
+    }
+
+    /**
+     * "Center Title": puts the title in the middle of the top bar on every screen. Runs when the screen stack changes
+     * and again shortly after, because a screen builds its top bar a moment after it is added.
+     */
+    public static void centerTitles(final org.telegram.ui.ActionBar.INavigationLayout layout) {
+        if (layout == null || !isTitleCentered()) return;
+        Runnable r = () -> {
+            try {
+                for (org.telegram.ui.ActionBar.BaseFragment f : layout.getFragmentStack()) {
+                    if (f != null && f.getActionBar() != null) f.getActionBar().centerTitle();
+                }
+            } catch (Throwable e) {
+                FileLog.e(e);
+            }
+        };
+        r.run();
+        AndroidUtilities.runOnUIThread(r, 120);
+        AndroidUtilities.runOnUIThread(r, 450);
     }
 
     public static boolean isGlassBlur() {
