@@ -151,6 +151,9 @@ public class LiteMode {
             // always enabled for tablets
             return true;
         }
+        if (flag == FLAG_LIQUID_GLASS && TrustedConfig.isIosStyle()) {
+            return true;
+        }
         return (getValue() & preprocessFlag(flag)) > 0;
     }
 

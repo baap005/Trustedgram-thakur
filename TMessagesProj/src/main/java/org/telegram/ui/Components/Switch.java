@@ -28,6 +28,7 @@ import android.graphics.drawable.RippleDrawable;
 import android.os.Build;
 import android.util.StateSet;
 import android.view.View;
+import org.telegram.messenger.TrustedConfig;
 import android.view.accessibility.AccessibilityNodeInfo;
 
 import androidx.annotation.Keep;
@@ -280,6 +281,9 @@ public class Switch extends View {
     public void setChecked(boolean checked, int iconType, boolean animated) {
         if (checked != isChecked) {
             isChecked = checked;
+            if (attachedToWindow && animated && TrustedConfig.isIosStyle()) {
+                try { performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK, android.view.HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING); } catch (Throwable ignore) {}
+            }
             if (attachedToWindow && animated) {
                 animateToCheckedState(checked);
             } else {

@@ -12815,20 +12815,21 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             animated = false;
         }
         boolean onlySelfStories = !isArchive() && getStoriesController().hasOnlySelfStories();
-        boolean newVisibility;
+        boolean nvTmp;
         if (communityId != 0) {
-            newVisibility = false;
+            nvTmp = false;
         } else if (isArchive()) {
-            newVisibility = !getStoriesController().getHiddenList().isEmpty();
+            nvTmp = !getStoriesController().getHiddenList().isEmpty();
         } else {
-            newVisibility = !onlySelfStories && getStoriesController().hasStories();
+            nvTmp = !onlySelfStories && getStoriesController().hasStories();
             onlySelfStories = getStoriesController().hasOnlySelfStories();
         }
 
         if (org.telegram.messenger.TrustedConfig.isHideStories() && !isArchive()) {
-            newVisibility = false;
+            nvTmp = false;
             onlySelfStories = false;
         }
+        final boolean newVisibility = nvTmp;
         hasOnlySlefStories = onlySelfStories;
 
         boolean oldStoriesCellVisibility = dialogStoriesCellVisible;

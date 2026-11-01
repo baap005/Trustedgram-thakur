@@ -397,6 +397,10 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
         }
     }
 
+    public void setLabel(CharSequence text) {
+        textView.setText(text);
+    }
+
     public static GlassTabView createMainTab(Context context, Theme.ResourcesProvider resourcesProvider, TabAnimation tabAnimation, @StringRes int stringRes) {
         GlassTabView tab = new GlassTabView(context);
         tab.resourcesProvider = resourcesProvider;

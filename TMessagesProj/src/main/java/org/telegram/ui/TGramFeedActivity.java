@@ -563,17 +563,6 @@ public class TGramFeedActivity extends BaseFragment {
                     if (url instanceof URLSpan) handleLink(((URLSpan) url).getURL());
                 }
 
-                // inline buttons under a post
-                public void didPressBotButton(ChatMessageCell cell, TLRPC.KeyboardButton button) {
-                    if (button == null) return;
-                    if (button instanceof TLRPC.TL_keyboardButtonUrl) {
-                        handleLink(((TLRPC.TL_keyboardButtonUrl) button).url);
-                    } else {
-                        // buttons that talk to a bot need the real channel: open the post there
-                        openPost(current);
-                    }
-                }
-
                 public void didLongPress(ChatMessageCell cell, float x, float y) {
                     showPostActions(current);
                 }

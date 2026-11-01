@@ -17,6 +17,28 @@ public class ThemeColors {
 
     private static SparseArray<String> colorKeysMap;
     private static HashMap<String, Integer> colorKeysStringMap;
+    /** iOS Telegram look (light): system blue, grouped grey background, green switches, iOS greys. */
+    private static void applyIosPalette(int[] c) {
+        final int blue = 0xff007aff, green = 0xff34c759, grey = 0xff8e8e93;
+        c[key_windowBackgroundGray] = 0xfff2f2f7;
+        c[key_dialogBackgroundGray] = 0xfff2f2f7;
+        c[key_divider] = 0xffc6c6c8;
+        c[key_windowBackgroundWhiteBlueText] = blue;
+        c[key_windowBackgroundWhiteBlueHeader] = blue;
+        c[key_dialogTextBlue] = blue;
+        c[key_dialogTextBlue2] = blue;
+        c[key_dialogTextLink] = blue;
+        c[key_switchTrackChecked] = green;
+        c[key_switch2TrackChecked] = green;
+        c[key_switchTrack] = 0xffe9e9ea;
+        c[key_switch2Track] = 0xffe9e9ea;
+        c[key_chats_unreadCounter] = blue;
+        c[key_chats_actionBackground] = blue;
+        c[key_chats_name] = 0xff000000;
+        c[key_chats_message] = grey;
+        c[key_featuredStickers_addButton] = blue;
+    }
+
     public static int[] createDefaultColors() {
         int[] defaultColors = new int[Theme.colorsCount];
 
@@ -885,6 +907,9 @@ public class ThemeColors {
         defaultColors[key_telegram_color] = TELEGRAM_COLOR;
         defaultColors[key_telegram_color_text] = TELEGRAM_COLOR_TEXT;
 
+        if (org.telegram.messenger.TrustedConfig.isIosStyle()) {
+            applyIosPalette(defaultColors);
+        }
         return defaultColors;
     }
 

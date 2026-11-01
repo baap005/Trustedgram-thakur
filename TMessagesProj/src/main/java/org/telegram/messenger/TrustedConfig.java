@@ -65,8 +65,25 @@ public class TrustedConfig {
         prefs().edit().putInt("title_mode", mode).apply();
     }
 
+    /** iOS look: iOS colours, always-on liquid glass, green switches. Colours apply after restart. */
+    public static boolean isIosStyle() {
+        return prefs().getBoolean("ios_style", true);
+    }
+
+    public static void setIosStyle(boolean v) {
+        prefs().edit().putBoolean("ios_style", v).apply();
+    }
+
+    public static boolean isFeedTab() {
+        return prefs().getBoolean("feed_tab", true);
+    }
+
+    public static void setFeedTab(boolean v) {
+        prefs().edit().putBoolean("feed_tab", v).apply();
+    }
+
     public static boolean isTitleCentered() {
-        return prefs().getBoolean("title_center", false);
+        return prefs().getBoolean("title_center", true);
     }
 
     public static void setTitleCentered(boolean v) {

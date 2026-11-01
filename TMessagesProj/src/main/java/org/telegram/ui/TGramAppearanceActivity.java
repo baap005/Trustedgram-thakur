@@ -13,7 +13,7 @@ import java.util.ArrayList;
 /** Appearance: chat list title, centered titles, popup glass. */
 public class TGramAppearanceActivity extends UniversalFragment {
 
-    private static final int ID_TITLE = 1, ID_CENTER = 2, ID_BLUR = 3;
+    private static final int ID_TITLE = 1, ID_CENTER = 2, ID_BLUR = 3, ID_IOS = 4, ID_FEEDTAB = 5;
     private static final String[] MODES = {"App name", "Account first name"};
 
     @Override
@@ -23,6 +23,10 @@ public class TGramAppearanceActivity extends UniversalFragment {
 
     @Override
     protected void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
+        items.add(UItem.asHeader("iOS Style"));
+        items.add(UItem.asButtonCheck(ID_IOS, "iOS Look", "iOS colours, green switches, always-on liquid glass bars. Restart the app to apply colours.").setChecked(TrustedConfig.isIosStyle()));
+        items.add(UItem.asButtonCheck(ID_FEEDTAB, "Feed in Bottom Bar", "Adds a Feed button to the floating tab bar. Restart to apply.").setChecked(TrustedConfig.isFeedTab()));
+        items.add(UItem.asShadow(null));
         items.add(UItem.asHeader("Chat List"));
         items.add(UItem.asButton(ID_TITLE, "Title Text", MODES[Math.max(0, Math.min(1, TrustedConfig.getTitleMode()))]));
         items.add(UItem.asButtonCheck(ID_CENTER, "Center Title", "Show titles in the middle of the top bar on every screen").setChecked(TrustedConfig.isTitleCentered()));
@@ -34,7 +38,11 @@ public class TGramAppearanceActivity extends UniversalFragment {
 
     @Override
     protected void onClick(UItem item, View view, int position, float x, float y) {
-        if (item.id == ID_BLUR) {
+        if (item.id == ID_FEEDTAB) {
+            TrustedConfig.setFeedTab(!TrustedConfig.isFeedTab());
+        } else if (item.id == ID_IOS) {
+            TrustedConfig.setIosStyle(!TrustedConfig.isIosStyle());
+        } else if (item.id == ID_BLUR) {
             TrustedConfig.setGlassBlur(!TrustedConfig.isGlassBlur());
         } else if (item.id == ID_CENTER) {
             TrustedConfig.setTitleCentered(!TrustedConfig.isTitleCentered());

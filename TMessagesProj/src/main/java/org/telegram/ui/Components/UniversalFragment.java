@@ -69,7 +69,51 @@ public abstract class UniversalFragment extends BaseFragment {
         };
         contentView.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
+        if (useLargeTitle()) {
+            setupLargeTitle(context, contentView);
+        }
+
         return fragmentView = contentView;
+    }
+
+    /** iOS-style large title that collapses into the action bar while scrolling (TGram pages only). */
+    protected boolean useLargeTitle() {
+        return getClass().getSimpleName().startsWith("TGram") && org.telegram.messenger.TrustedConfig.isIosStyle();
+    }
+
+    private void setupLargeTitle(Context context, FrameLayout contentView) {
+        final int h = AndroidUtilities.dp(56);
+        final android.widget.TextView big = new android.widget.TextView(context);
+        big.setText(getTitle());
+        big.setTextSize(android.util.TypedValue.COMPLEX_UNIT_DIP, 32);
+        big.setTypeface(AndroidUtilities.bold());
+        big.setGravity(android.view.Gravity.CENTER_VERTICAL);
+        big.setPadding(AndroidUtilities.dp(20), 0, AndroidUtilities.dp(20), 0);
+        big.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        contentView.addView(big, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 56, android.view.Gravity.TOP));
+        listView.setPadding(listView.getPaddingLeft(), h, listView.getPaddingRight(), listView.getPaddingBottom());
+        listView.setClipToPadding(false);
+        final int titleColor = Theme.getColor(Theme.key_actionBarDefaultTitle);
+        actionBar.setTitleColor(androidx.core.graphics.ColorUtils.setAlphaComponent(titleColor, 0));
+        listView.addOnScrollListener(new androidx.recyclerview.widget.RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrolled(androidx.recyclerview.widget.RecyclerView rv, int dx, int dy) {
+                float off;
+                View first = rv.getChildCount() > 0 ? rv.getChildAt(0) : null;
+                if (first == null) {
+                    off = 0;
+                } else if (rv.getChildAdapterPosition(first) == 0) {
+                    off = Math.max(0, h - first.getTop());
+                } else {
+                    off = h;
+                }
+                off = Math.min(off, h);
+                big.setTranslationY(-off);
+                big.setAlpha(1f - off / h);
+                float a = Math.max(0f, Math.min(1f, (off - h * 0.5f) / (h * 0.5f)));
+                actionBar.setTitleColor(androidx.core.graphics.ColorUtils.setAlphaComponent(titleColor, (int) (255 * a)));
+            }
+        });
     }
 
     protected abstract CharSequence getTitle();

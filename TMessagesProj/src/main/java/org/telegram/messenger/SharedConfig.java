@@ -342,6 +342,14 @@ public class SharedConfig {
     private static int overrideDevicePerformanceClass;
 
     public static boolean drawDialogIcons;
+    private static boolean iosDefaults() {
+        try {
+            return TrustedConfig.isIosStyle();
+        } catch (Throwable e) {
+            return false;
+        }
+    }
+
     public static boolean useThreeLinesLayout;
     public static boolean archiveHidden;
 
@@ -612,7 +620,7 @@ public class SharedConfig {
             repeatMode = preferences.getInt("repeatMode", 0);
             fontSize = preferences.getInt("fons_size", AndroidUtilities.isTablet() && !AndroidUtilities.isFold() ? 18 : 16);
             fontSizeIsDefault = !preferences.contains("fons_size");
-            bubbleRadius = preferences.getInt("bubbleRadius", 17);
+            bubbleRadius = preferences.getInt("bubbleRadius", iosDefaults() ? 19 : 17);
             ivFontSize = preferences.getInt("iv_font_size", fontSize);
             allowBigEmoji = preferences.getBoolean("allowBigEmoji", true);
             useSystemEmoji = preferences.getBoolean("useSystemEmoji", false);
@@ -638,7 +646,7 @@ public class SharedConfig {
             sortFilesByName = preferences.getBoolean("sortFilesByName", false);
             noSoundHintShowed = preferences.getBoolean("noSoundHintShowed", false);
             directShareHash = preferences.getString("directShareHash2", null);
-            useThreeLinesLayout = preferences.getBoolean("useThreeLinesLayout", false);
+            useThreeLinesLayout = preferences.getBoolean("useThreeLinesLayout", iosDefaults());
             archiveHidden = preferences.getBoolean("archiveHidden", false);
             distanceSystemType = preferences.getInt("distanceSystemType", 0);
             keepMedia = preferences.getInt("keep_media", CacheByChatsController.KEEP_MEDIA_ONE_MONTH);
