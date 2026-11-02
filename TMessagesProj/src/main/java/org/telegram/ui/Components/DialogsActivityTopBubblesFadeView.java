@@ -28,9 +28,9 @@ public class DialogsActivityTopBubblesFadeView extends View {
 
             final int alpha = Color.alpha(color);
             shader = new LinearGradient(0, 0, 0, 1, new int[]{
-                    ColorUtils.setAlphaComponent(color, 0xE8 * alpha / 255),
-                    ColorUtils.setAlphaComponent(color, 0xC0 * alpha / 255),
-                    ColorUtils.setAlphaComponent(color, 0x90 * alpha / 255),
+                    ColorUtils.setAlphaComponent(color, 0xD8 * alpha / 255),
+                    ColorUtils.setAlphaComponent(color, 0xB4 * alpha / 255),
+                    ColorUtils.setAlphaComponent(color, 0x80 * alpha / 255),
                     ColorUtils.setAlphaComponent(color, 0)
             }, null, Shader.TileMode.CLAMP);
             paint.setShader(shader);
