@@ -82,7 +82,7 @@ public abstract class UniversalFragment extends BaseFragment {
 
     /** True for the TrustedGram settings pages (TGramXxxActivity), which use bubble style glass tiles. */
     protected boolean isTGramPage() {
-        return getClass().getSimpleName().startsWith("TGram");
+        return false; // TGram pages now use the same native tile cards as every other settings page
     }
 
     /** Soft gradient behind the glass tiles so the transparency is actually visible. */
@@ -102,7 +102,7 @@ public abstract class UniversalFragment extends BaseFragment {
 
     /** iOS-style large title that collapses into the action bar while scrolling (TGram pages only). */
     protected boolean useLargeTitle() {
-        return getClass().getSimpleName().startsWith("TGram") && org.telegram.messenger.TrustedConfig.isIosStyle();
+        return false; // normal action-bar title like the rest of the app
     }
 
     private void setupLargeTitle(Context context, FrameLayout contentView) {

@@ -575,6 +575,7 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
         if (maxLeft < textLeft) {
             return textLeft;
         }
+        // exactly centered whenever it fits (the width was reserved symmetrically in onMeasure)
         return Math.max(textLeft, Math.min((total - viewWidth) / 2, maxLeft));
     }
 
@@ -1462,6 +1463,11 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
                 // A closing search field keeps filling the menu during its fade-out; don't squeeze the title for it.
                 int titleMenuWidth = menu != null ? menu.getMeasuredWidth() - (isSearchFieldVisible ? 0 : menu.getClosingSearchFieldWidth()) : 0;
                 int availableWidth = width - titleMenuWidth - dp(16) - textLeft - titleRightMargin;
+                if (isCenterTitle && !isSearchFieldVisible && (menu == null || !menu.searchFieldVisible())) {
+                    // centered title: keep the same free space on both sides so it sits exactly in the middle and never shifts
+                    final int side = Math.max(textLeft, titleMenuWidth + dp(8)) + titleRightMargin;
+                    availableWidth = width - 2 * side;
+                }
                 availableWidth = Math.max(availableWidth, 0);
 
                 if (((fromBottom && i == 0) || (!fromBottom && i == 1)) && overlayTitleAnimation && titleAnimationRunning) {

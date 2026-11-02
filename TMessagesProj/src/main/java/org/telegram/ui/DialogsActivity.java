@@ -13788,11 +13788,12 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 presentFragment(new ThemeActivity(ThemeActivity.THEME_TYPE_NIGHT));
             });
         });
-        int tgFeedUnread = org.telegram.messenger.TrustedConfig.isFeedUnreadCounter() ? org.telegram.messenger.TrustedFeed.getUnreadCount(currentAccount) : 0;
-        io.add(R.drawable.msg_channel, tgFeedUnread > 0 ? "Feed (" + tgFeedUnread + ")" : "Feed", () -> presentFragment(new TGramFeedActivity()));
-        io.add(R.drawable.ghost, org.telegram.messenger.TrustedGhost.isActive() ? "Ghost mode: ON" : "Ghost mode: OFF", () -> org.telegram.messenger.TrustedGhost.setActive(!org.telegram.messenger.TrustedGhost.isActive()));
-        io.add(R.drawable.trusted_menu_icon, "TGram Settings", () -> presentFragment(new TGramMainActivity()));
         io.addGap();
+        io.add(R.drawable.msg_archive, getString(R.string.ArchivedChats), () -> {
+            Bundle args = new Bundle();
+            args.putInt("folderId", 1);
+            presentFragment(new DialogsActivity(args));
+        });
         io.add(R.drawable.outline_groups_24, getString(R.string.NewGroup), () -> {
             Bundle args = new Bundle();
             presentFragment(new GroupCreateActivity(args));
@@ -13802,6 +13803,11 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             args.putLong("user_id", UserConfig.getInstance(currentAccount).getClientUserId());
             presentFragment(new ChatActivity(args));
         });
+        int tgFeedUnread = org.telegram.messenger.TrustedConfig.isFeedUnreadCounter() ? org.telegram.messenger.TrustedFeed.getUnreadCount(currentAccount) : 0;
+        io.add(R.drawable.msg_channel, tgFeedUnread > 0 ? "Feed (" + tgFeedUnread + ")" : "Feed", () -> presentFragment(new TGramFeedActivity()));
+        io.addGap();
+        io.add(R.drawable.ghost, org.telegram.messenger.TrustedGhost.isActive() ? "Ghost mode: ON" : "Ghost mode: OFF", () -> org.telegram.messenger.TrustedGhost.setActive(!org.telegram.messenger.TrustedGhost.isActive()));
+        io.add(R.drawable.trusted_menu_icon, "TGram Settings", () -> presentFragment(new TGramMainActivity()));
         if (ApplicationLoader.applicationLoaderInstance != null) {
             ApplicationLoader.applicationLoaderInstance.addItemOptions(io);
         }

@@ -59,6 +59,7 @@ import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.Cells.ChatUnreadCell;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
+import org.telegram.ui.Components.ItemOptions;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 
@@ -132,12 +133,13 @@ public class TGramFeedActivity extends BaseFragment implements NotificationCente
 
     // ------------------------------------------------------------------ screen
 
+    /** Solid dark / light pill (no see-through), like the exteraGram feed bar. */
     private int barColor() {
-        return Theme.getColor(Theme.key_chat_serviceBackground);
+        return androidx.core.graphics.ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_actionBarDefault), 0xF2);
     }
 
     private int barText() {
-        return Theme.getColor(Theme.key_chat_serviceText);
+        return Theme.getColor(Theme.key_actionBarDefaultTitle);
     }
 
     private View pill(Context context, View content) {
@@ -905,32 +907,33 @@ public class TGramFeedActivity extends BaseFragment implements NotificationCente
     }
 
     private void showPostActions(final Post p) {
-        if (p == null || getParentActivity() == null) return;
-        final ArrayList<CharSequence> labels = new ArrayList<>();
-        final ArrayList<Integer> icons = new ArrayList<>();
-        final ArrayList<Integer> actions = new ArrayList<>();
+        if (p == null || getParentActivity() == null || listView == null) return;
+        View anchor = null;
+        for (int i = 0; i < listView.getChildCount(); i++) {
+            View child = listView.getChildAt(i);
+            if (child instanceof PostView && ((PostView) child).current == p) {
+                anchor = child;
+                break;
+            }
+        }
+        if (anchor == null) return;
         final CharSequence text = textOf(p);
-        labels.add("Open post"); icons.add(R.drawable.msg_openin); actions.add(0);
-        labels.add("Open channel"); icons.add(R.drawable.msg_channel); actions.add(1);
-        if (!TextUtils.isEmpty(text)) { labels.add("Copy text"); icons.add(R.drawable.msg_copy); actions.add(2); }
-        labels.add("Copy link"); icons.add(R.drawable.msg_link); actions.add(3);
-        labels.add("Forward"); icons.add(R.drawable.msg_forward); actions.add(4);
-        int[] iconArray = new int[icons.size()];
-        for (int i = 0; i < iconArray.length; i++) iconArray[i] = icons.get(i);
-        BottomSheet.Builder builder = new BottomSheet.Builder(getParentActivity());
-        builder.setItems(labels.toArray(new CharSequence[0]), iconArray, (DialogInterface dialog, int which) -> {
-            int a = actions.get(which);
-            if (a == 0) openPost(p);
-            else if (a == 1) openChannel(p);
-            else if (a == 2) {
+        ItemOptions options = ItemOptions.makeOptions(this, anchor);
+        options.add(R.drawable.msg_openin, "Show in chat", () -> openPost(p));
+        options.add(R.drawable.msg_channel, "Open channel", () -> openChannel(p));
+        options.addGap();
+        if (!TextUtils.isEmpty(text)) {
+            options.add(R.drawable.msg_copy, "Copy", () -> {
                 AndroidUtilities.addToClipboard(text);
                 toast("Text copied");
-            } else if (a == 3) {
-                AndroidUtilities.addToClipboard(linkOf(p));
-                toast("Link copied");
-            } else if (a == 4) forward(p);
+            });
+        }
+        options.add(R.drawable.msg_link, "Copy link", () -> {
+            AndroidUtilities.addToClipboard(linkOf(p));
+            toast("Link copied");
         });
-        showDialog(builder.create());
+        options.add(R.drawable.msg_forward, "Forward", () -> forward(p));
+        options.show();
     }
 
     private void toast(String s) {
