@@ -4715,6 +4715,7 @@ public class ChatActivityEnterView extends FrameLayout implements
     public boolean isStories;
 
     Paint backgroundPaint = new Paint();
+    private final Paint composeGlassEdgePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private float composeShadowAlpha = 1f;
     private Rect blurBounds = new Rect();
     @Override
@@ -4750,6 +4751,11 @@ public class ChatActivityEnterView extends FrameLayout implements
         } else {
             canvas.drawRect(0, bottom, getWidth(), getHeight(), getThemedPaint(Theme.key_paint_chatComposeBackground));
         }
+
+        composeGlassEdgePaint.setColor(ColorUtils.setAlphaComponent(Color.WHITE, 24));
+        composeGlassEdgePaint.setStrokeWidth(dpf2(0.7f));
+        composeGlassEdgePaint.setStyle(Paint.Style.STROKE);
+        canvas.drawLine(dp(16), bottom, getWidth() - dp(16), bottom, composeGlassEdgePaint);
     }
 
     public float getVisualHeight() {
