@@ -118,17 +118,17 @@ public class ChatReplyContainer extends FrameLayout {
 
             icon = new ImageView(context);
             icon.setScaleType(ImageView.ScaleType.CENTER);
-            addView(icon, LayoutHelper.createFrame(52, 46, Gravity.TOP | Gravity.LEFT));
+            addView(icon, LayoutHelper.createFrame(54, 46, Gravity.TOP | Gravity.LEFT));
 
             name = new SimpleTextView(context);
             name.setTextSize(14);
             name.setTypeface(AndroidUtilities.bold());
-            addView(name, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 18, Gravity.TOP | Gravity.LEFT, 52, 6, 0, 0));
+            addView(name, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 18, Gravity.TOP | Gravity.LEFT, 54, 6, 0, 0));
 
             obj = new SimpleTextView(context);
             obj.setTextSize(14);
             NotificationCenter.listenEmojiLoading(obj);
-            addView(obj, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 18, Gravity.TOP | Gravity.LEFT, 52, 24, 0, 0));
+            addView(obj, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 18, Gravity.TOP | Gravity.LEFT, 54, 24, 0, 0));
 
             objHint = new SimpleTextView(context);
             objHint.setTextSize(14);
@@ -162,8 +162,8 @@ public class ChatReplyContainer extends FrameLayout {
                     }
                 }
             };
-            image.setRoundRadius(dp(6));
-            addView(image, LayoutHelper.createFrame(34, 34, Gravity.TOP | Gravity.LEFT, 52, 6, 0, 0));
+            image.setRoundRadius(dp(8));
+            addView(image, LayoutHelper.createFrame(34, 34, Gravity.TOP | Gravity.LEFT, 54, 6, 0, 0));
 
             updateColors();
         }
