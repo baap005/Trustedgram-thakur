@@ -6,6 +6,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Path;
+import android.graphics.Paint;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.view.MotionEvent;
@@ -60,6 +61,7 @@ public class ChatActivityTopPanelLayout extends AnimatedLinearLayout {
     }
 
     private final Path clipPath = new Path();
+    private final Paint glassEdgePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final RectF clipRectF = new RectF();
 
     private void checkBoundsAndClipping() {
@@ -68,14 +70,14 @@ public class ChatActivityTopPanelLayout extends AnimatedLinearLayout {
 
         clipRectF.set(getPaddingLeft(), getPaddingTop(), getMeasuredWidth() - getPaddingRight(), getPaddingTop() + bgHeight);
 
-        final float r = Math.min(dp(18), Math.min(clipRectF.width(), clipRectF.height()) / 2f);
+        final float r = Math.min(dp(20), Math.min(clipRectF.width(), clipRectF.height()) / 2f);
         clipPath.rewind();
         clipPath.addRoundRect(clipRectF, r, r, Path.Direction.CW);
 
         if (backgroundDrawable != null) {
             backgroundDrawable.setAlpha((int) (bgAlpha * 255));
             backgroundDrawable.setBounds(getPaddingLeft() - dp(7), 0, getMeasuredWidth() - getPaddingRight() + dp(7), getPaddingTop() + getPaddingBottom() + (int) bgHeight);
-            backgroundDrawable.setRadius(Math.min(dp(18), bgHeight / 2));
+            backgroundDrawable.setRadius(Math.min(dp(20), bgHeight / 2));
         }
     }
 
@@ -108,6 +110,10 @@ public class ChatActivityTopPanelLayout extends AnimatedLinearLayout {
 
         if (backgroundDrawable != null) {
             backgroundDrawable.draw(canvas);
+            glassEdgePaint.setStyle(Paint.Style.STROKE);
+            glassEdgePaint.setStrokeWidth(dp(0.7f));
+            glassEdgePaint.setColor(0x1EFFFFFF);
+            canvas.drawRoundRect(clipRectF, dp(20), dp(20), glassEdgePaint);
         }
 
         boolean callDrawn = false;
