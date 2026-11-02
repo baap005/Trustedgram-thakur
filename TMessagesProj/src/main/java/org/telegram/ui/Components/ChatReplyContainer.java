@@ -134,7 +134,7 @@ public class ChatReplyContainer extends FrameLayout {
             objHint.setTextSize(14);
             objHint.setText(LocaleController.getString(R.string.TapForForwardingOptions));
             objHint.setAlpha(0f);
-            addView(objHint, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 18, Gravity.TOP | Gravity.LEFT, 52, 24, 0, 0));
+            addView(objHint, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 18, Gravity.TOP | Gravity.LEFT, 54, 24, 0, 0));
 
             SpoilerEffect replySpoilerEffect = new SpoilerEffect();
             image = new BackupImageView(context) {
