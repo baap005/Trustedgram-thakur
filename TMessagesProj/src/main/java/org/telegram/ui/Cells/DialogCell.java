@@ -169,8 +169,8 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
     public ShareDialogCell.RepostStoryDrawable repostStoryDrawable;
     public int avatarStart = 11;
     public int messagePaddingStart = 72;
-    public int heightDefault = 70;
-    public int heightThreeLines = 76;
+    public int heightDefault = 72;
+    public int heightThreeLines = 78;
     public int addHeightForTags = 3;
     public int addForumHeightForTags = 11;
     public TLRPC.TL_forumTopic forumTopic;
