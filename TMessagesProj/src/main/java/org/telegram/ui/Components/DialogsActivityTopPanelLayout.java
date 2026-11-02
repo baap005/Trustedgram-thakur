@@ -152,8 +152,8 @@ public class DialogsActivityTopPanelLayout extends AnimatedLinearLayout {
 
             final int wasAlpha = Theme.dividerPaint.getAlpha();
             Theme.dividerPaint.setAlpha((int) (wasAlpha * alpha));
-            final float offsetL = getPaddingLeft() + dp(16) * (1f - alpha);
-            final float offsetR = getPaddingRight() + dp(16) * (1f - alpha);
+            final float offsetL = getPaddingLeft() + dp(18) * (1f - alpha);
+            final float offsetR = getPaddingRight() + dp(18) * (1f - alpha);
             canvas.drawLine(offsetL, top, getWidth() - offsetR, top, Theme.dividerPaint);
             Theme.dividerPaint.setAlpha(wasAlpha);
         }
