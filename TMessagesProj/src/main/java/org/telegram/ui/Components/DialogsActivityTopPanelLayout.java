@@ -66,7 +66,7 @@ public class DialogsActivityTopPanelLayout extends AnimatedLinearLayout {
 
         if (backgroundDrawable != null) {
             backgroundDrawable.setAlpha((int) (bgAlpha * 255));
-            backgroundDrawable.setBounds(dp(4), dp(14), getMeasuredWidth() - dp(4), getPaddingTop() + getPaddingBottom() + (int) bgHeight - dp(14));
+            backgroundDrawable.setBounds(dp(8), dp(12), getMeasuredWidth() - dp(8), getPaddingTop() + getPaddingBottom() + (int) bgHeight - dp(12));
             backgroundDrawable.setRadius(Math.min(dp(defaultRadiusDp), bgHeight / 2));
         }
     }
