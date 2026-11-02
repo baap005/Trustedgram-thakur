@@ -262,7 +262,7 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
             }
         }
         avatarImageView.setContentDescription(getString(R.string.AccDescrProfilePicture));
-        avatarImageView.setRoundRadius(dp(21));
+        avatarImageView.setRoundRadius(dp(22));
         addView(avatarImageView);
         if (avatarClickable) {
             final TLRPC.Chat chat = parentFragment != null ? parentFragment.getCurrentChat() : null;
@@ -756,10 +756,10 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
     private boolean glassMode;
     public void setGlassMode() {
         if (titleTextView != null) {
-            titleTextView.setTextSizePx(dp(17.5f));
+            titleTextView.setTextSizePx(dp(17.7f));
         }
         if (subtitleTextView != null) {
-            subtitleTextView.setTextSizePx(dp(13.5f));
+            subtitleTextView.setTextSizePx(dp(13.7f));
         }
         glassMode = true;
     }
