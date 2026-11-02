@@ -45,27 +45,61 @@ public class TGramMainActivity extends UniversalFragment {
         LinearLayout box = new LinearLayout(context);
         box.setOrientation(LinearLayout.VERTICAL);
         box.setGravity(Gravity.CENTER);
+        box.setPadding(dp(14), dp(10), dp(14), dp(10));
+
+        // A restrained iOS-inspired dark glass surface with a subtle edge highlight.
+        GradientDrawable glass = new GradientDrawable(
+                GradientDrawable.Orientation.TL_BR,
+                new int[]{0xF0252B38, 0xF0101219});
+        glass.setCornerRadius(dp(26));
+        glass.setStroke(dp(1), 0x35FFFFFF);
+        box.setBackground(glass);
+
         ImageView icon = new ImageView(context);
-        GradientDrawable bg = new GradientDrawable(GradientDrawable.Orientation.TL_BR, new int[]{0xFF232A3C, 0xFF000000});
-        bg.setCornerRadius(dp(24));
-        icon.setBackground(bg);
+        GradientDrawable iconBg = new GradientDrawable(
+                GradientDrawable.Orientation.TL_BR,
+                new int[]{0xFF35435E, 0xFF10141F});
+        iconBg.setCornerRadius(dp(21));
+        iconBg.setStroke(dp(1), 0x55FFFFFF);
+        icon.setBackground(iconBg);
         icon.setImageResource(R.drawable.trusted_splash);
         icon.setScaleType(ImageView.ScaleType.FIT_CENTER);
-        icon.setPadding(dp(6), dp(6), dp(6), dp(6));
-        box.addView(icon, new LinearLayout.LayoutParams(dp(92), dp(92)));
+        icon.setPadding(dp(7), dp(7), dp(7), dp(7));
+        box.addView(icon, new LinearLayout.LayoutParams(dp(66), dp(66)));
+
         TextView name = new TextView(context);
         name.setText("TrustedGram");
         name.setTextSize(22);
         name.setTypeface(Typeface.DEFAULT_BOLD);
+        name.setLetterSpacing(0.01f);
         name.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         LinearLayout.LayoutParams nlp = new LinearLayout.LayoutParams(-2, -2);
-        nlp.topMargin = dp(12);
+        nlp.topMargin = dp(7);
         box.addView(name, nlp);
+
+        TextView subtitle = new TextView(context);
+        subtitle.setText("Your Telegram, refined.");
+        subtitle.setTextSize(12);
+        subtitle.setTextColor(0xFF9CA7BA);
+        LinearLayout.LayoutParams slp = new LinearLayout.LayoutParams(-2, -2);
+        slp.topMargin = dp(1);
+        box.addView(subtitle, slp);
+
         TextView ver = new TextView(context);
-        ver.setText("Version " + TrustedConfig.VERSION_NAME + " (build " + TrustedConfig.VERSION_CODE + ")");
-        ver.setTextSize(15);
-        ver.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
-        box.addView(ver, new LinearLayout.LayoutParams(-2, -2));
+        ver.setText("VERSION " + TrustedConfig.VERSION_NAME + "  •  BUILD " + TrustedConfig.VERSION_CODE);
+        ver.setTextSize(10);
+        ver.setTypeface(Typeface.DEFAULT_BOLD);
+        ver.setLetterSpacing(0.07f);
+        ver.setTextColor(0xFFB9C5D9);
+        GradientDrawable versionBg = new GradientDrawable();
+        versionBg.setColor(0x332F80ED);
+        versionBg.setCornerRadius(dp(20));
+        versionBg.setStroke(dp(1), 0x443F8FEF);
+        ver.setBackground(versionBg);
+        ver.setPadding(dp(10), dp(4), dp(10), dp(4));
+        LinearLayout.LayoutParams vlp = new LinearLayout.LayoutParams(-2, -2);
+        vlp.topMargin = dp(6);
+        box.addView(ver, vlp);
         return box;
     }
 
