@@ -2280,7 +2280,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
         selectedMenuItem.setDelegate(id -> actionBar.getActionBarMenuOnItemClick().onItemClick(id));
         selectedMenuItem.setAdditionalYOffset(dp(72));
         selectedMenuItem.setTranslationX(dp(1));
-        selectedMenuItem.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_dialogButtonSelector), 6));
+        selectedMenuItem.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_dialogButtonSelector), 8));
         selectedMenuItem.setOnClickListener(v -> selectedMenuItem.toggleSubMenu());
 
         motionItem = new ActionBarMenuItem(context, null, 0, getThemedColor(Theme.key_dialogTextBlack), false, resourcesProvider);
@@ -2293,7 +2293,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
         motionItem.setScaleY(0.6f);
         motionItem.setAdditionalYOffset(dp(72));
         motionItem.setTranslationX(-dp(3));
-        motionItem.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_dialogButtonSelector), 6));
+        motionItem.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_dialogButtonSelector), 8));
         motionItem.setOnClickListener(v -> {
             if (photoLayout == null) return;
 
@@ -2309,8 +2309,8 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
             @Override
             protected void onDraw(Canvas canvas) {
                 p.setColor(getThemedColor(Theme.key_featuredStickers_addButton));
-                canvas.drawRoundRect(0, getHeight() / 2f - dp(14),
-                    getWidth(), getHeight() / 2f + dp(14), dp(14), dp(14), p);
+                canvas.drawRoundRect(0, getHeight() / 2f - dp(15),
+                    getWidth(), getHeight() / 2f + dp(15), dp(15), dp(15), p);
                 super.onDraw(canvas);
             }
         };
@@ -4097,11 +4097,11 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                 textPaint.setColor(ColorUtils.setAlphaComponent(color, (int) (Color.alpha(color) * (0.58 + 0.42 * sendButtonEnabledProgress))));
                 paint.setColor(getThemedColor(Theme.key_dialogBackground));
                 rect.set(cx - size / 2, 0, cx + size / 2, getMeasuredHeight());
-                canvas.drawRoundRect(rect, dp(12), dp(12), paint);
+                canvas.drawRoundRect(rect, dp(13), dp(13), paint);
 
                 paint.setColor(getThemedColor(Theme.key_chat_attachCheckBoxBackground));
                 rect.set(cx - size / 2 + dp(2), dp(2), cx + size / 2 - dp(2), getMeasuredHeight() - dp(2));
-                canvas.drawRoundRect(rect, dp(10), dp(10), paint);
+                canvas.drawRoundRect(rect, dp(11), dp(11), paint);
 
                 canvas.drawText(text, cx - textSize / 2, dp(16.2f), textPaint);
             }
