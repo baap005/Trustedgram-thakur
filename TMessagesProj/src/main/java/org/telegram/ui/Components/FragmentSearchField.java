@@ -8,6 +8,8 @@ import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.RectF;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
@@ -183,6 +185,8 @@ public class FragmentSearchField extends FrameLayout implements FactorAnimator.T
     }
 
     private Drawable bg;
+    private final Paint glassStrokePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final RectF glassStrokeRect = new RectF();
 
     @Override
     protected void dispatchDraw(@NonNull Canvas canvas) {
@@ -205,6 +209,11 @@ public class FragmentSearchField extends FrameLayout implements FactorAnimator.T
             blurredBackgroundDrawable.draw(canvas);
         }
         super.dispatchDraw(canvas);
+        glassStrokePaint.setStyle(Paint.Style.STROKE);
+        glassStrokePaint.setStrokeWidth(dp(1));
+        glassStrokePaint.setColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText, 0.11f));
+        glassStrokeRect.set(dp(0.5f), dp(0.5f), getWidth() - dp(0.5f), getHeight() - dp(0.5f));
+        canvas.drawRoundRect(glassStrokeRect, dp(20), dp(20), glassStrokePaint);
         canvas.restore();
     }
 
