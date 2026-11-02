@@ -58,6 +58,7 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
     private BackupImageView backupImageView;
     private Theme.ResourcesProvider resourcesProvider;
     private final Paint paintCounterBackground = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint paintTabSelectorStroke = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final AnimatedTextView.AnimatedTextDrawable counter;
 
     private static final int ANIMATOR_ID_IS_SELECTED = 0;
@@ -154,13 +155,17 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
         if (selectedFactor > 0 && !skipDrawSelector) {
             final float alpha = AnimatorUtils.DECELERATE_INTERPOLATOR.getInterpolation(selectedFactor);
 
-            paintCounterBackground.setColor(Theme.multAlpha(colorSelected, 0.09f * alpha));
+            paintCounterBackground.setColor(Theme.multAlpha(colorSelected, 0.12f * alpha));
+            paintTabSelectorStroke.setStyle(Paint.Style.STROKE);
+            paintTabSelectorStroke.setStrokeWidth(dp(1));
+            paintTabSelectorStroke.setColor(Theme.multAlpha(Color.WHITE, 0.10f * alpha));
             tmpRectF.set(0, 0, viewWidth, getHeight());
             final float r = Math.min(tmpRectF.width(), tmpRectF.height()) / 2f;
             final float s = lerp(0.6f, 1, selectedFactor) * MathUtils.clamp(attachScale, 0, 1);
             canvas.save();
             canvas.scale(s, s, tmpRectF.centerX(), tmpRectF.centerY());
             canvas.drawRoundRect(tmpRectF, r, r, paintCounterBackground);
+            canvas.drawRoundRect(tmpRectF, r, r, paintTabSelectorStroke);
             canvas.restore();
         }
 
