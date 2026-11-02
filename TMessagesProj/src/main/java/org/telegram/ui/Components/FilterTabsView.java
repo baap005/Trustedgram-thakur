@@ -174,7 +174,7 @@ public class FilterTabsView extends FrameLayout {
     }
 
     private static final float TAB_PADDING_WIDTH = 24;
-    private static final float TAB_INTERNAL_PADDING = 12.5f;
+    private static final float TAB_INTERNAL_PADDING = 13.5f;
     private static final float TAB_COUNTER_HEIGHT = 17.333f;
 
     public class TabView extends View {
