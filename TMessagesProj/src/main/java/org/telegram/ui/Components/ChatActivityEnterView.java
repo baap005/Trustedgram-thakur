@@ -47,6 +47,7 @@ import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
 import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Build;
@@ -2699,7 +2700,10 @@ public class ChatActivityEnterView extends FrameLayout implements
             }
         };
         frameLayout.setClipChildren(false);
-        textFieldContainer.addView(frameLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM, 0, 0, DEFAULT_HEIGHT, 0));
+        updateComposerAppearance();
+        // Inset the compose field so it reads as a floating iOS-style input capsule,
+        // with the send control remaining visually separate on its right.
+        textFieldContainer.addView(frameLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM, isChat ? 8 : 0, 0, DEFAULT_HEIGHT + (isChat ? 8 : 0), 0));
 
         emojiButton = new ChatActivityEnterViewAnimatedIconView(context) {
             @Override
@@ -10373,8 +10377,21 @@ public class ChatActivityEnterView extends FrameLayout implements
         return trendingStickersAlert;
     }
 
+    private void updateComposerAppearance() {
+        if (!isChat || messageEditTextContainer == null) {
+            return;
+        }
+        GradientDrawable background = new GradientDrawable();
+        background.setShape(GradientDrawable.RECTANGLE);
+        background.setColor(Theme.multAlpha(getThemedColor(Theme.key_chat_messagePanelBackground), 0.96f));
+        background.setCornerRadius(dp(22));
+        background.setStroke(dp(1), Theme.multAlpha(getThemedColor(Theme.key_windowBackgroundWhiteBlackText), 0.09f));
+        messageEditTextContainer.setBackground(background);
+    }
+
     @Override
     public void updateColors() {
+        updateComposerAppearance();
         if (messageSendPreview != null) {
             messageSendPreview.updateColors();
         }
