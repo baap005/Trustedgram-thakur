@@ -34,7 +34,7 @@ public class TGramFoldersActivity extends UniversalFragment {
 
     @Override
     protected boolean useLargeTitle() {
-        return true;
+        return TrustedConfig.isLargeTitles();
     }
 
     @Override
