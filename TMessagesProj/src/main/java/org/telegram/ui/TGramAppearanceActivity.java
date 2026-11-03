@@ -22,6 +22,11 @@ public class TGramAppearanceActivity extends UniversalFragment {
     private static final String[] MODES = {"App name", "Account first name"};
 
     @Override
+    protected boolean useLargeTitle() {
+        return true;
+    }
+
+    @Override
     protected CharSequence getTitle() {
         return "Appearance";
     }
