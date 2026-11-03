@@ -276,7 +276,8 @@ public class ProfileActivity2 extends BaseFragment implements
                 updateScrollLayout();
             }
         });
-        listView.setSections();
+        // Match the larger, softly grouped iOS profile information cards.
+        listView.setSections(dp(14), dp(22), false);
         container.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
 
         snapHelper = new LinearSnapHelper() {
