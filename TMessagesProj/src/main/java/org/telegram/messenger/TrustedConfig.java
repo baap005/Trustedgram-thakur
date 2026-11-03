@@ -163,6 +163,15 @@ public class TrustedConfig {
         prefs().edit().putBoolean("glass_blur", v).apply();
     }
 
+    /** Use collapsing iOS-style large titles on TrustedGram settings subpages. */
+    public static boolean isLargeTitles() {
+        return prefs().getBoolean("large_titles", true);
+    }
+
+    public static void setLargeTitles(boolean value) {
+        prefs().edit().putBoolean("large_titles", value).apply();
+    }
+
     public static boolean isFeedWide() {
         return prefs().getBoolean("feed_wide", true);
     }
