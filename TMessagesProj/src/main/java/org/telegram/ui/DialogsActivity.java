@@ -59,6 +59,7 @@ import android.text.Spanned;
 import android.text.TextPaint;
 import android.text.TextUtils;
 import android.text.style.ImageSpan;
+import android.text.style.ForegroundColorSpan;
 import android.util.LongSparseArray;
 import android.util.Property;
 import android.util.StateSet;
@@ -3012,7 +3013,11 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         String title = org.telegram.messenger.TrustedConfig.getChatListTitle(currentAccount);
         if (title.equals(lastTrustedTitle)) return;
         lastTrustedTitle = title;
-        actionBar.setTitle(new SpannableStringBuilder(title), statusDrawable);
+        SpannableStringBuilder styledTitle = new SpannableStringBuilder(title);
+        // Keep the TrustedGram brand readable on the dark glass chat-list header,
+        // even when the selected Telegram theme supplies a dark action-bar title color.
+        styledTitle.setSpan(new ForegroundColorSpan(0xFFF4F7FC), 0, styledTitle.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        actionBar.setTitle(styledTitle, statusDrawable);
         updateStatus(UserConfig.getInstance(currentAccount).getCurrentUser(), false);
         if (org.telegram.messenger.TrustedConfig.isTitleCentered()) {
             actionBar.centerTitle();
