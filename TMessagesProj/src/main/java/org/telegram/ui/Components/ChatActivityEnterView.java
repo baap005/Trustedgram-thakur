@@ -4744,6 +4744,12 @@ public class ChatActivityEnterView extends FrameLayout implements
             Theme.chat_composeShadowDrawable.draw(canvas);
         }
 
+        // In chats, keep the composer capsule itself visible without painting
+        // the old full-width rectangular panel behind it.
+        if (isChat) {
+            return;
+        }
+
         if (allowBlur) {
             backgroundPaint.setColor(getThemedColor(Theme.key_chat_messagePanelBackground));
             if (SharedConfig.chatBlurEnabled() && sizeNotifierLayout != null) {
