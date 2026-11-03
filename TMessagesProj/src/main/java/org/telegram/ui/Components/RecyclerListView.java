@@ -1555,6 +1555,7 @@ public class RecyclerListView extends RecyclerView implements IBlur3Capture {
     }
 
     private Paint backgroundPaint;
+    private final RectF roundedSectionRect = new RectF();
     private boolean roundedSectionBackgrounds;
 
     public void setRoundedSectionBackgrounds(boolean enabled) {
@@ -1592,9 +1593,8 @@ public class RecyclerListView extends RecyclerView implements IBlur3Capture {
             }
             backgroundPaint.setColor(color);
             if (roundedSectionBackgrounds) {
-                RectF sectionRect = AndroidUtilities.rectTmp;
-                sectionRect.set(dp(16), top - topMargin, getWidth() - dp(16), bottom + bottomMargin);
-                canvas.drawRoundRect(sectionRect, dp(22), dp(22), backgroundPaint);
+                roundedSectionRect.set(dp(16), top - topMargin, getWidth() - dp(16), bottom + bottomMargin);
+                canvas.drawRoundRect(roundedSectionRect, dp(22), dp(22), backgroundPaint);
             } else {
                 canvas.drawRect(0, top - topMargin, getWidth(), bottom + bottomMargin, backgroundPaint);
             }
