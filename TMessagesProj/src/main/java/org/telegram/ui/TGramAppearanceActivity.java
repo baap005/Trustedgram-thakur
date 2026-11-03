@@ -19,7 +19,7 @@ public class TGramAppearanceActivity extends UniversalFragment {
         return true;
     }
 
-    private static final int ID_TITLE = 1, ID_CENTER = 2, ID_BLUR = 3, ID_IOS = 4, ID_FEEDTAB = 5, ID_LARGE = 6;
+    private static final int ID_TITLE = 1, ID_CENTER = 2, ID_BLUR = 3, ID_IOS = 4, ID_FEEDTAB = 5, ID_LARGE = 6, ID_FEED_UNREAD = 7, ID_FEED_WIDE = 8, ID_FEED_ARCHIVE = 9;
     private static final String[] MODES = {"App name", "Account first name", "Custom text"};
 
     @Override
@@ -44,7 +44,7 @@ public class TGramAppearanceActivity extends UniversalFragment {
         items.add(UItem.asButton(ID_TITLE, "Chat List Title", titleValue));
         items.add(UItem.asButtonCheck(ID_CENTER, "Center Title", "Show titles in the middle of the top bar on every screen").setChecked(TrustedConfig.isTitleCentered()));
         items.add(UItem.asShadow("The chat list title changes as soon as you go back."));
-        items.add(UItem.asHeader("Navigation"));
+        items.add(UItem.asHeader("Feed"));\n        items.add(UItem.asButtonCheck(ID_FEED_UNREAD, "Unread Counter", "Show the unread-post counter on the Feed tab.").setChecked(TrustedConfig.isFeedUnreadCounter()));\n        items.add(UItem.asButtonCheck(ID_FEED_WIDE, "Wide Layout", "Use a wider, edge-to-edge layout for Feed posts.").setChecked(TrustedConfig.isFeedWide()));\n        items.add(UItem.asButtonCheck(ID_FEED_ARCHIVE, "Archive Feed Posts", "Keep archived Feed posts out of the main Feed list.").setChecked(TrustedConfig.isFeedArchive()));\n        items.add(UItem.asShadow(null));\n        items.add(UItem.asHeader("Navigation"));
         items.add(UItem.asButtonCheck(ID_LARGE, "Large Titles", "Use the iOS-style large, collapsing title on TrustedGram settings pages. Reopen a page to apply.").setChecked(TrustedConfig.isLargeTitles()));
         items.add(UItem.asShadow(null));
         items.add(UItem.asHeader("Popups"));
@@ -63,7 +63,7 @@ public class TGramAppearanceActivity extends UniversalFragment {
         } else if (item.id == ID_BLUR) {
             TrustedConfig.setGlassBlur(!TrustedConfig.isGlassBlur());
             showRestartRequired();
-        } else if (item.id == ID_CENTER) {
+        } else if (item.id == ID_FEED_UNREAD) {\n            TrustedConfig.setFeedUnreadCounter(!TrustedConfig.isFeedUnreadCounter());\n        } else if (item.id == ID_FEED_WIDE) {\n            TrustedConfig.setFeedWide(!TrustedConfig.isFeedWide());\n        } else if (item.id == ID_FEED_ARCHIVE) {\n            TrustedConfig.setFeedArchive(!TrustedConfig.isFeedArchive());\n        } else if (item.id == ID_CENTER) {
             TrustedConfig.setTitleCentered(!TrustedConfig.isTitleCentered());
             if (parentLayout != null) TrustedConfig.centerTitles(parentLayout);
         } else if (item.id == ID_LARGE) {
