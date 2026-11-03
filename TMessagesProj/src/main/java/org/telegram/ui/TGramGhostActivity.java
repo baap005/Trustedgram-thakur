@@ -11,6 +11,11 @@ import java.util.ArrayList;
 
 public class TGramGhostActivity extends UniversalFragment {
 
+    @Override
+    protected boolean isTGramPage() {
+        return true;
+    }
+
     private static final int ID_GHOST = 10, ID_READ = 11, ID_ONLINE = 12, ID_TYPING = 13, ID_AFTER_SEND = 14;
 
     @Override
