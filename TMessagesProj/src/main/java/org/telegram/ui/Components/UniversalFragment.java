@@ -67,6 +67,10 @@ public abstract class UniversalFragment extends BaseFragment {
                 savedScrollPosition = -1;
             }
         };
+        // Settings pages are short, mostly static lists. Avoid the shared 350 ms
+        // item-change animator so predictive-back snapshots and edge gestures stay responsive.
+        listView.setItemAnimator(null);
+        listView.setItemViewCacheSize(8);
         if (isTGramPage()) {
             contentView.setBackground(createGlassBackdrop());
             listView.setBubbleSections();
