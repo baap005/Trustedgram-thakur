@@ -1298,7 +1298,7 @@ public class TGramFeedActivity extends BaseFragment implements NotificationCente
         ArrayList<Integer> icons = new ArrayList<>();
         ArrayList<Runnable> acts = new ArrayList<>();
         names.add("Show in chat"); icons.add(R.drawable.msg_openin); acts.add(() -> openPost(p));
-        names.add("Reply"); icons.add(R.drawable.msg_reply); acts.add(() -> openPost(p));
+        names.add("Reply"); icons.add(R.drawable.msg_reply_small); acts.add(() -> openPost(p));
         if (!TextUtils.isEmpty(text)) {
             names.add("Copy"); icons.add(R.drawable.msg_copy);
             acts.add(() -> {
