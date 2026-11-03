@@ -194,7 +194,11 @@ public class TGramFeedActivity extends BaseFragment implements NotificationCente
 
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
-        if (id != NotificationCenter.didUpdateReactions || args.length < 3 || !(args[2] instanceof TLRPC.TL_messageReactions)) return;
+        if (id != NotificationCenter.didUpdateReactions || args.length < 3
+                || !(args[0] instanceof Long) || !(args[1] instanceof Integer)
+                || !(args[2] instanceof TLRPC.TL_messageReactions)) {
+            return;
+        }
         long did = (Long) args[0];
         int msgId = (Integer) args[1];
         for (int i = 0; i < items.size(); i++) {
@@ -209,7 +213,7 @@ public class TGramFeedActivity extends BaseFragment implements NotificationCente
                     changed = true;
                 }
             }
-            if (changed) adapter.notifyItemChanged(i);
+            if (changed && adapter != null) adapter.notifyItemChanged(i);
         }
     }
 
@@ -301,6 +305,15 @@ public class TGramFeedActivity extends BaseFragment implements NotificationCente
         listView.setAdapter(adapter);
         listView.setClipToPadding(false);
         listView.setPadding(0, top, 0, dp(12));
+        // Message cells consume their own touch events, so a long press on media/text
+        // does not reliably reach PostView's listener. Handle it at the list level too.
+        listView.setOnItemLongClickListener((view, position) -> {
+            if (position < 0 || position >= items.size()) return false;
+            Item item = items.get(position);
+            if (item.type != TYPE_POST) return false;
+            showPostActions(item.post);
+            return true;
+        });
         listView.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
@@ -1619,14 +1632,19 @@ public class TGramFeedActivity extends BaseFragment implements NotificationCente
                     ChatMessageCell cell = (ChatMessageCell) holder.itemView;
                     cell.isChat = false;
                     cell.setFullyDraw(true);
-                    cell.setMessageObject(albumMessages.get(position), albumGroup, false, false, false);
+                    // Match ChatActivity's grouped-message edge flags. These are required
+                    // for the album's shared caption/background to be drawn on the correct
+                    // edge instead of treating every photo as an independent message.
+                    cell.setMessageObject(albumMessages.get(position), albumGroup,
+                            position < albumMessages.size() - 1, position > 0, false);
                 }
             };
             albumList.setAdapter(albumAdapter);
             addView(albumList, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
 
-            // tap a post to select it (Copy / Copy link / Forward in the top bar); hold it for the full menu with reactions
-            setOnClickListener(v -> toggleSelect(current));
+            // A normal tap opens the original channel post. Selection stays an explicit
+            // action in the long-press menu, as it is in Telegram.
+            setOnClickListener(v -> openPost(current));
             setOnLongClickListener(v -> {
                 showPostActions(current);
                 return true;
