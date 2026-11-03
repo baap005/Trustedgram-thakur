@@ -24,7 +24,7 @@ public class TGramAppearanceActivity extends UniversalFragment {
 
     @Override
     protected boolean useLargeTitle() {
-        return true;
+        return TrustedConfig.isLargeTitles();
     }
 
     @Override
