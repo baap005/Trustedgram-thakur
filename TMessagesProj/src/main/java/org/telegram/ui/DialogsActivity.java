@@ -13808,9 +13808,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             args.putLong("user_id", UserConfig.getInstance(currentAccount).getClientUserId());
             presentFragment(new ChatActivity(args));
         });
-        int tgFeedUnread = org.telegram.messenger.TrustedConfig.isFeedUnreadCounter() ? org.telegram.messenger.TrustedFeed.getUnreadCount(currentAccount) : 0;
-        io.add(R.drawable.msg_channel, tgFeedUnread > 0 ? "Feed (" + tgFeedUnread + ")" : "Feed", () -> presentFragment(new TGramFeedActivity()));
-        io.addGap();
+
         io.add(R.drawable.ghost, org.telegram.messenger.TrustedGhost.isActive() ? "Ghost mode: ON" : "Ghost mode: OFF", () -> org.telegram.messenger.TrustedGhost.setActive(!org.telegram.messenger.TrustedGhost.isActive()));
         io.add(R.drawable.trusted_menu_icon, "TGram Settings", () -> presentFragment(new TGramMainActivity()));
         if (ApplicationLoader.applicationLoaderInstance != null) {
