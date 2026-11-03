@@ -1200,7 +1200,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
             iconView = new ImageView(context);
             iconView.setScaleType(ImageView.ScaleType.FIT_CENTER);
-            iconLayout.addView(iconView, LayoutHelper.createFrame(24, 24, Gravity.CENTER));
+            iconLayout.addView(iconView, LayoutHelper.createFrame(22, 22, Gravity.CENTER));
 
             textLayout = new LinearLayout(context);
             textLayout.setOrientation(VERTICAL);
@@ -1266,7 +1266,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
             super.onMeasure(
                 MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY),
-                MeasureSpec.makeMeasureSpec(dp(mini ? 44 : twoLines ? 60 : 50), MeasureSpec.EXACTLY)
+                MeasureSpec.makeMeasureSpec(dp(mini ? 46 : twoLines ? 62 : 54), MeasureSpec.EXACTLY)
             );
         }
 
@@ -1294,7 +1294,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
             @Override
             public void draw(@NonNull Canvas canvas) {
-                final float r = dp(10);
+                final float r = dp(12);
                 AndroidUtilities.rectTmp.set(getBounds());
                 matrix.reset();
                 matrix.postTranslate(AndroidUtilities.rectTmp.left, AndroidUtilities.rectTmp.top);
