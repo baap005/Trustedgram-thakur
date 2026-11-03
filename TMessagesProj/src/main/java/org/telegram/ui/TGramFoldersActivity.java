@@ -13,6 +13,11 @@ import java.util.ArrayList;
 /** Chat Folders: every folder in one list, tap to edit it, create a new one or open Telegram's folder manager. */
 public class TGramFoldersActivity extends UniversalFragment {
 
+    @Override
+    protected boolean isTGramPage() {
+        return true;
+    }
+
     private static final int ID_NEW = 1, ID_MANAGE = 2, ID_BASE = 100;
 
     @Override
