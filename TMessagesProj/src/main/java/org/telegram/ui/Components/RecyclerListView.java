@@ -1555,6 +1555,13 @@ public class RecyclerListView extends RecyclerView implements IBlur3Capture {
     }
 
     private Paint backgroundPaint;
+    private boolean roundedSectionBackgrounds;
+
+    public void setRoundedSectionBackgrounds(boolean enabled) {
+        roundedSectionBackgrounds = enabled;
+        invalidate();
+    }
+
     protected void drawSectionBackground(Canvas canvas, int fromAdapterPosition, int toAdapterPosition, int color) {
         drawSectionBackground(canvas, fromAdapterPosition, toAdapterPosition, color, 0, 0);
     }
@@ -1584,7 +1591,13 @@ public class RecyclerListView extends RecyclerView implements IBlur3Capture {
                 backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
             }
             backgroundPaint.setColor(color);
-            canvas.drawRect(0, top - topMargin, getWidth(), bottom + bottomMargin, backgroundPaint);
+            if (roundedSectionBackgrounds) {
+                RectF sectionRect = AndroidUtilities.rectTmp;
+                sectionRect.set(dp(16), top - topMargin, getWidth() - dp(16), bottom + bottomMargin);
+                canvas.drawRoundRect(sectionRect, dp(22), dp(22), backgroundPaint);
+            } else {
+                canvas.drawRect(0, top - topMargin, getWidth(), bottom + bottomMargin, backgroundPaint);
+            }
         }
     }
 
