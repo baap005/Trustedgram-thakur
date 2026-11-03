@@ -44,7 +44,12 @@ public class TGramAppearanceActivity extends UniversalFragment {
         items.add(UItem.asButton(ID_TITLE, "Chat List Title", titleValue));
         items.add(UItem.asButtonCheck(ID_CENTER, "Center Title", "Show titles in the middle of the top bar on every screen").setChecked(TrustedConfig.isTitleCentered()));
         items.add(UItem.asShadow("The chat list title changes as soon as you go back."));
-        items.add(UItem.asHeader("Feed"));\n        items.add(UItem.asButtonCheck(ID_FEED_UNREAD, "Unread Counter", "Show the unread-post counter on the Feed tab.").setChecked(TrustedConfig.isFeedUnreadCounter()));\n        items.add(UItem.asButtonCheck(ID_FEED_WIDE, "Wide Layout", "Use a wider, edge-to-edge layout for Feed posts.").setChecked(TrustedConfig.isFeedWide()));\n        items.add(UItem.asButtonCheck(ID_FEED_ARCHIVE, "Archive Feed Posts", "Keep archived Feed posts out of the main Feed list.").setChecked(TrustedConfig.isFeedArchive()));\n        items.add(UItem.asShadow(null));\n        items.add(UItem.asHeader("Navigation"));
+        items.add(UItem.asHeader("Feed"));
+        items.add(UItem.asButtonCheck(ID_FEED_UNREAD, "Unread Counter", "Show the unread-post counter on the Feed tab.").setChecked(TrustedConfig.isFeedUnreadCounter()));
+        items.add(UItem.asButtonCheck(ID_FEED_WIDE, "Wide Layout", "Use a wider, edge-to-edge layout for Feed posts.").setChecked(TrustedConfig.isFeedWide()));
+        items.add(UItem.asButtonCheck(ID_FEED_ARCHIVE, "Archive Feed Posts", "Keep archived Feed posts out of the main Feed list.").setChecked(TrustedConfig.isFeedArchive()));
+        items.add(UItem.asShadow(null));
+        items.add(UItem.asHeader("Navigation"));
         items.add(UItem.asButtonCheck(ID_LARGE, "Large Titles", "Use the iOS-style large, collapsing title on TrustedGram settings pages. Reopen a page to apply.").setChecked(TrustedConfig.isLargeTitles()));
         items.add(UItem.asShadow(null));
         items.add(UItem.asHeader("Popups"));
