@@ -499,7 +499,6 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         editProfileView.setTextColor(0xffffffff);
         editProfileView.setGravity(Gravity.CENTER);
         editProfileView.setPadding(dp(24), 0, dp(24), 0);
-        editProfileView.setBackground(Theme.createSelectorDrawable(0x553B82F6, Theme.RIPPLE_MASK_ROUNDRECT_8DP));
         GradientDrawable editProfileBackground = new GradientDrawable();
         editProfileBackground.setColor(0xFF3478F6);
         editProfileBackground.setCornerRadius(dp(18));
