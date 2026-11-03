@@ -12,6 +12,11 @@ import java.util.ArrayList;
 
 public class TGramOtherActivity extends UniversalFragment {
 
+    @Override
+    protected boolean isTGramPage() {
+        return true;
+    }
+
     private static final int ID_VERSION = 1, ID_CHECK = 2;
 
     @Override
