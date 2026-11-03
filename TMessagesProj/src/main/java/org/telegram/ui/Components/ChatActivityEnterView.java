@@ -10383,9 +10383,9 @@ public class ChatActivityEnterView extends FrameLayout implements
         }
         GradientDrawable background = new GradientDrawable();
         background.setShape(GradientDrawable.RECTANGLE);
-        background.setColor(Theme.multAlpha(getThemedColor(Theme.key_chat_messagePanelBackground), 0.96f));
-        background.setCornerRadius(dp(22));
-        background.setStroke(dp(1), Theme.multAlpha(getThemedColor(Theme.key_windowBackgroundWhiteBlackText), 0.09f));
+        background.setColor(Theme.multAlpha(getThemedColor(Theme.key_chat_messagePanelBackground), 0.98f));
+        background.setCornerRadius(dp(25));
+        background.setStroke(dp(1), Theme.multAlpha(getThemedColor(Theme.key_windowBackgroundWhiteBlackText), 0.12f));
         messageEditTextContainer.setBackground(background);
     }
 
