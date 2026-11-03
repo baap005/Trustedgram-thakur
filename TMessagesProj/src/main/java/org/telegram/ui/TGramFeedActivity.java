@@ -1169,7 +1169,7 @@ public class TGramFeedActivity extends BaseFragment implements NotificationCente
         return super.onBackPressed(invoked);
     }
 
-    // ------------------------------------------------------------------ long-press menu with reactions
+    // ------------------------------------------------------------------ channel-style post action popup
 
     private View findPostView(Post p) {
         if (listView == null) return null;
@@ -1661,9 +1661,9 @@ public class TGramFeedActivity extends BaseFragment implements NotificationCente
             albumList.setAdapter(albumAdapter);
             addView(albumList, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
 
-            // A normal tap opens the original channel post. Selection stays an explicit
-            // action in the long-press menu, as it is in Telegram.
-            setOnClickListener(v -> openPost(current));
+            // Feed posts use the channel-style action popup on a normal tap.
+            // Media, links, reactions and author controls keep their dedicated handlers.
+            setOnClickListener(v -> showPostActions(current));
             setOnLongClickListener(v -> {
                 showPostActions(current);
                 return true;
@@ -1734,7 +1734,7 @@ public class TGramFeedActivity extends BaseFragment implements NotificationCente
                 }
 
                 public void didPressReplyMessage(ChatMessageCell cell, int id, float x, float y, boolean longpress) {
-                    if (longpress) showPostActions(current); else openPost(current);
+                    showPostActions(current);
                 }
 
                 public void didPressViaBot(ChatMessageCell cell, String username) {
@@ -1756,7 +1756,7 @@ public class TGramFeedActivity extends BaseFragment implements NotificationCente
                 }
 
                 public void didPressOther(ChatMessageCell cell, float otherX, float otherY) {
-                    toggleSelect(current);
+                    showPostActions(current);
                 }
 
                 public boolean hasSelectedMessages() {
