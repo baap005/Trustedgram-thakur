@@ -1310,8 +1310,10 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             if (drawDivider) {
                 dividerPaint.setColor(Theme.multAlpha(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider), 0.10f));
                 dividerPaint.setStrokeWidth(dp(0.6f));
-                final float left = dp(mini ? 55 : 64);
-                canvas.drawLine(left, getHeight() - dp(0.5f), getWidth() - dp(16), getHeight() - dp(0.5f), dividerPaint);
+                final float iconInset = dp(mini ? 55 : 64);
+                final float left = LocaleController.isRTL ? dp(16) : iconInset;
+                final float right = getWidth() - (LocaleController.isRTL ? iconInset : dp(16));
+                canvas.drawLine(left, getHeight() - dp(0.5f), right, getHeight() - dp(0.5f), dividerPaint);
             }
         }
 
