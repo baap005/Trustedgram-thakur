@@ -68,7 +68,13 @@ public class TGramAppearanceActivity extends UniversalFragment {
         } else if (item.id == ID_BLUR) {
             TrustedConfig.setGlassBlur(!TrustedConfig.isGlassBlur());
             showRestartRequired();
-        } else if (item.id == ID_FEED_UNREAD) {\n            TrustedConfig.setFeedUnreadCounter(!TrustedConfig.isFeedUnreadCounter());\n        } else if (item.id == ID_FEED_WIDE) {\n            TrustedConfig.setFeedWide(!TrustedConfig.isFeedWide());\n        } else if (item.id == ID_FEED_ARCHIVE) {\n            TrustedConfig.setFeedArchive(!TrustedConfig.isFeedArchive());\n        } else if (item.id == ID_CENTER) {
+        } else if (item.id == ID_FEED_UNREAD) {
+            TrustedConfig.setFeedUnreadCounter(!TrustedConfig.isFeedUnreadCounter());
+        } else if (item.id == ID_FEED_WIDE) {
+            TrustedConfig.setFeedWide(!TrustedConfig.isFeedWide());
+        } else if (item.id == ID_FEED_ARCHIVE) {
+            TrustedConfig.setFeedArchive(!TrustedConfig.isFeedArchive());
+        } else if (item.id == ID_CENTER) {
             TrustedConfig.setTitleCentered(!TrustedConfig.isTitleCentered());
             if (parentLayout != null) TrustedConfig.centerTitles(parentLayout);
         } else if (item.id == ID_LARGE) {
