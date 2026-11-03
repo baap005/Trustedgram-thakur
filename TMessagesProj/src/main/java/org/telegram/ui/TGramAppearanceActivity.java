@@ -19,7 +19,7 @@ public class TGramAppearanceActivity extends UniversalFragment {
         return true;
     }
 
-    private static final int ID_TITLE = 1, ID_CENTER = 2, ID_BLUR = 3, ID_IOS = 4, ID_FEEDTAB = 5, ID_LARGE = 6, ID_FEED_UNREAD = 7, ID_FEED_WIDE = 8, ID_FEED_ARCHIVE = 9;
+    private static final int ID_TITLE = 1, ID_CENTER = 2, ID_BLUR = 3, ID_IOS = 4, ID_LARGE = 6;
     private static final String[] MODES = {"App name", "Account first name", "Custom text"};
 
     @Override
@@ -36,7 +36,6 @@ public class TGramAppearanceActivity extends UniversalFragment {
     protected void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
         items.add(UItem.asHeader("iOS Style"));
         items.add(UItem.asButtonCheck(ID_IOS, "iOS Look", "iOS colours, green switches, always-on liquid glass bars. Restart the app to apply colours.").setChecked(TrustedConfig.isIosStyle()));
-        items.add(UItem.asButtonCheck(ID_FEEDTAB, "Feed in Bottom Bar", "Adds a Feed button to the floating tab bar. Restart to apply.").setChecked(TrustedConfig.isFeedTab()));
         items.add(UItem.asShadow(null));
         items.add(UItem.asHeader("Chat List"));
         int titleMode = Math.max(0, Math.min(2, TrustedConfig.getTitleMode()));
@@ -44,11 +43,6 @@ public class TGramAppearanceActivity extends UniversalFragment {
         items.add(UItem.asButton(ID_TITLE, "Chat List Title", titleValue));
         items.add(UItem.asButtonCheck(ID_CENTER, "Center Title", "Show titles in the middle of the top bar on every screen").setChecked(TrustedConfig.isTitleCentered()));
         items.add(UItem.asShadow("The chat list title changes as soon as you go back."));
-        items.add(UItem.asHeader("Feed"));
-        items.add(UItem.asButtonCheck(ID_FEED_UNREAD, "Unread Counter", "Show the unread-post counter on the Feed tab.").setChecked(TrustedConfig.isFeedUnreadCounter()));
-        items.add(UItem.asButtonCheck(ID_FEED_WIDE, "Wide Layout", "Use a wider, edge-to-edge layout for Feed posts.").setChecked(TrustedConfig.isFeedWide()));
-        items.add(UItem.asButtonCheck(ID_FEED_ARCHIVE, "Archive Feed Posts", "Keep archived Feed posts out of the main Feed list.").setChecked(TrustedConfig.isFeedArchive()));
-        items.add(UItem.asShadow(null));
         items.add(UItem.asHeader("Navigation"));
         items.add(UItem.asButtonCheck(ID_LARGE, "Large Titles", "Use the iOS-style large, collapsing title on TrustedGram settings pages. Reopen a page to apply.").setChecked(TrustedConfig.isLargeTitles()));
         items.add(UItem.asShadow(null));
@@ -59,21 +53,12 @@ public class TGramAppearanceActivity extends UniversalFragment {
 
     @Override
     protected void onClick(UItem item, View view, int position, float x, float y) {
-        if (item.id == ID_FEEDTAB) {
-            TrustedConfig.setFeedTab(!TrustedConfig.isFeedTab());
-            showRestartRequired();
-        } else if (item.id == ID_IOS) {
+        if (item.id == ID_IOS) {
             TrustedConfig.setIosStyle(!TrustedConfig.isIosStyle());
             showRestartRequired();
         } else if (item.id == ID_BLUR) {
             TrustedConfig.setGlassBlur(!TrustedConfig.isGlassBlur());
             showRestartRequired();
-        } else if (item.id == ID_FEED_UNREAD) {
-            TrustedConfig.setFeedUnreadCounter(!TrustedConfig.isFeedUnreadCounter());
-        } else if (item.id == ID_FEED_WIDE) {
-            TrustedConfig.setFeedWide(!TrustedConfig.isFeedWide());
-        } else if (item.id == ID_FEED_ARCHIVE) {
-            TrustedConfig.setFeedArchive(!TrustedConfig.isFeedArchive());
         } else if (item.id == ID_CENTER) {
             TrustedConfig.setTitleCentered(!TrustedConfig.isTitleCentered());
             if (parentLayout != null) TrustedConfig.centerTitles(parentLayout);
