@@ -416,9 +416,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         );
         profileHeaderBackground.setCornerRadius(dp(30));
         profileHeaderBackground.setStroke(dp(1), Theme.multAlpha(getThemedColor(Theme.key_windowBackgroundWhiteBlackText), Theme.isCurrentThemeDark() ? 0.16f : 0.09f));
-        topView.setBackground(profileHeaderBackground);
+        topView.setBackground(new android.graphics.drawable.InsetDrawable(profileHeaderBackground, dp(16), dp(8), dp(16), dp(8)));
         topView.setClipToOutline(true);
-        topView.setElevation(dp(2));
+        topView.setElevation(dp(3));
 
         avatarContainer = new FrameLayout(context);
         topView.addView(avatarContainer, LayoutHelper.createFrame(128, 128, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 18, 0, 0));
@@ -673,7 +673,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             return;
         }
 
-        items.add(UItem.asCustomShadow(topView, 260 - 12));
+        items.add(UItem.asCustomShadow(topView, 280 - 12));
 
         accountNumbers.clear();
         for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
