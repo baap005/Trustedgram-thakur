@@ -405,6 +405,12 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         imageUpdater.setDelegate(this);
 
         topView = new FrameLayout(context);
+        GradientDrawable profileHeaderBackground = new GradientDrawable();
+        profileHeaderBackground.setColor(Theme.multAlpha(getThemedColor(Theme.key_windowBackgroundWhite), Theme.isCurrentThemeDark() ? 0.72f : 0.92f));
+        profileHeaderBackground.setCornerRadius(dp(28));
+        profileHeaderBackground.setStroke(dp(1), Theme.multAlpha(getThemedColor(Theme.key_windowBackgroundWhiteBlackText), Theme.isCurrentThemeDark() ? 0.10f : 0.07f));
+        topView.setBackground(profileHeaderBackground);
+        topView.setClipToOutline(true);
 
         avatarContainer = new FrameLayout(context);
         topView.addView(avatarContainer, LayoutHelper.createFrame(120, 120, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 23 - 12, 0, 0));
@@ -718,6 +724,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
         items.add(SettingCell.Factory.of(90, 0xFF2F6BFF, 0xFF1B3FA8, R.drawable.trusted_menu_icon, "TGram Settings", "Ghost mode, feed, appearance and more"));
         items.add(UItem.asShadow(null));
+        items.add(UItem.asHeader("Preferences"));
         items.add(SettingCell.Factory.of(1, IconBackgroundColors.BLUE.top, IconBackgroundColors.BLUE.bottom, R.drawable.settings_account, getString(R.string.SettingsAccount), getString(R.string.SettingsAccountInfo)));
         items.add(SettingCell.Factory.of(2, IconBackgroundColors.ORANGE.top, IconBackgroundColors.ORANGE.bottom, R.drawable.settings_chat, getString(R.string.SettingsChat), getString(R.string.SettingsChatInfo)));
         items.add(SettingCell.Factory.of(3, IconBackgroundColors.GREEN.top, IconBackgroundColors.GREEN.bottom, R.drawable.settings_privacy, getString(R.string.SettingsPrivacySecurity), getString(R.string.SettingsPrivacySecurityInfo)));
@@ -735,6 +742,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             items.add(UItem.asShadow(null));
         }
 
+        items.add(UItem.asHeader("Services"));
         if (!getMessagesController().premiumFeaturesBlocked()) {
             items.add(SettingCell.Factory.of(11, 0xFFB659FF, 0xFF617CFF, R.drawable.settings_premium, getString(R.string.TelegramPremium)));
         }
