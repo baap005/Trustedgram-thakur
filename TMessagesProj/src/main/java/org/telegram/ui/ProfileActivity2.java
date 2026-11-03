@@ -235,7 +235,10 @@ public class ProfileActivity2 extends BaseFragment implements
 
         final ContainerView container = new ContainerView(context);
         container.setWillNotDraw(false);
-        container.setBackgroundColor(0);
+        final int profileBase = getThemedColor(Theme.key_windowBackgroundGray);
+        final int profileAccent = getThemedColor(Theme.key_featuredStickers_addButton);
+        final int profileTop = androidx.core.graphics.ColorUtils.blendARGB(profileBase, profileAccent, 0.10f);
+        container.setBackground(new android.graphics.drawable.GradientDrawable(android.graphics.drawable.GradientDrawable.Orientation.TOP_BOTTOM, new int[]{profileTop, profileBase, profileBase}));
 
         sharedMediaLayout = new SharedMediaLayout(
             context,
@@ -478,6 +481,7 @@ public class ProfileActivity2 extends BaseFragment implements
     private static final int ID_BIZ_HOURS = 9;
     private static final int ID_BIZ_LOCATION = 10;
     private static final int ID_NOTE = 11;
+    private static final int ID_BIO = 12;
 
     private boolean isSection(View view) {
         if (view == null) return false;
@@ -519,8 +523,11 @@ public class ProfileActivity2 extends BaseFragment implements
                 if (userInfo.business_location != null) {
                     items.add(ProfileLocationCell.Factory.of(ID_BIZ_LOCATION, userInfo.business_location));
                 }
-                if (userInfo.note != null) {
-
+                if (!TextUtils.isEmpty(userInfo.about)) {
+                    items.add(TextDetailCell.Factory.of(ID_BIO, userInfo.about, "bio"));
+                }
+                if (!TextUtils.isEmpty(userInfo.note)) {
+                    items.add(TextDetailCell.Factory.of(ID_NOTE, userInfo.note, "note"));
                 }
             }
         } else if (chat != null) {
