@@ -1214,6 +1214,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         private final TextView subtitleView;
         private final TextView valueView;
         private final boolean mini;
+        private final Paint dividerPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private boolean drawDivider;
         private boolean hasBackground = true;
 
         public SettingCell(Context context, Theme.ResourcesProvider resourcesProvider) {
@@ -1226,6 +1228,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             this.resourcesProvider = resourcesProvider;
             this.mini = mini;
             setOrientation(HORIZONTAL);
+            setWillNotDraw(false);
 
             iconLayout = new FrameLayout(context);
             iconLayout.setBackground(iconBackground = new Background());
@@ -1292,6 +1295,24 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         public void setValue(CharSequence value) {
             valueView.setVisibility(!TextUtils.isEmpty(value) ? View.VISIBLE : View.GONE);
             valueView.setText(value);
+        }
+
+        public void setDivider(boolean divider) {
+            if (drawDivider != divider) {
+                drawDivider = divider;
+                invalidate();
+            }
+        }
+
+        @Override
+        protected void onDraw(Canvas canvas) {
+            super.onDraw(canvas);
+            if (drawDivider) {
+                dividerPaint.setColor(Theme.multAlpha(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider), 0.10f));
+                dividerPaint.setStrokeWidth(dp(0.6f));
+                final float left = dp(mini ? 55 : 64);
+                canvas.drawLine(left, getHeight() - dp(0.5f), getWidth() - dp(16), getHeight() - dp(0.5f), dividerPaint);
+            }
         }
 
         @Override
@@ -1364,12 +1385,14 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             public void bindView(View view, UItem item, boolean divider, UniversalAdapter adapter, UniversalRecyclerView listView) {
                 int iconColorTop    = (int) item.longValue;
                 int iconColorBottom = (int) (item.longValue >>> 32);
-                ((SettingCell) view).set(
+                SettingCell cell = (SettingCell) view;
+                cell.set(
                     iconColorTop, iconColorBottom, item.iconResId,
                     item.text,
                     item.subtext,
                     item.textValue
                 );
+                cell.setDivider(divider);
             }
 
             public static UItem of(int id, int iconColorTop, int iconColorBottom, int icon, CharSequence title) {
