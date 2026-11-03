@@ -112,6 +112,7 @@ public class TGramMainActivity extends UniversalFragment {
     protected void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
         if (headerView == null) headerView = buildHeader(getContext());
         items.add(UItem.asCustom(headerView, 190));
+        items.add(UItem.asShadow(null));
         items.add(UItem.asHeader("Categories"));
         adapter.whiteSectionStart();
         items.add(UItem.asButton(ID_GENERAL, R.drawable.msg_settings, "General"));
