@@ -82,7 +82,7 @@ public abstract class UniversalFragment extends BaseFragment {
 
     /** True for the TrustedGram settings pages (TGramXxxActivity), which use bubble style glass tiles. */
     protected boolean isTGramPage() {
-        return false; // TGram pages now use the same native tile cards as every other settings page
+        return false; // Non-TrustedGram fragments keep Telegram's standard section layout.
     }
 
     /** Soft gradient behind the glass tiles so the transparency is actually visible. */
