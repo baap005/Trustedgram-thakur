@@ -332,7 +332,9 @@ public class MessageDrawable extends Drawable {
         } else if (overrideRounding > 0) {
             newRad = 0;
         } else {
-            newRad = dp(SharedConfig.bubbleRadius);
+            // TrustedGram uses the softer, larger corner radius from the iOS chat references.
+            // Keep the user's radius preference when it is already larger.
+            newRad = dp(Math.max(SharedConfig.bubbleRadius, 18));
         }
         int idx;
         if (isTopNear && isBottomNear) {
