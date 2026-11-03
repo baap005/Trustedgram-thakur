@@ -351,14 +351,6 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
             tabsView.addView(tabs[index]);
             tabsView.setViewVisible(view, true, false);
         }
-        if (org.telegram.messenger.TrustedConfig.isFeedTab()) {
-            final GlassTabView feedTab = GlassTabView.createMainTab(context, resourceProvider, GlassTabView.TabAnimation.ARTICLE, R.string.MainTabsChats);
-            feedTab.setLabel("Feed");
-            feedTab.setOnClickListener(v -> presentFragment(new TGramFeedActivity()));
-            tabsView.setMaxWidth(dp(392 + DialogsActivity.MAIN_TABS_MARGIN * 2));
-            tabsView.addView(feedTab);
-            tabsView.setViewVisible(feedTab, true, false);
-        }
         checkUi_callTabVisible(getUserConfig().showCallsTab, false);
 
         selectTab(viewPager.getCurrentPosition(), false);
