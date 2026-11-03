@@ -367,15 +367,6 @@
                 <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE"/>
             </intent-filter>
         </activity>
-<!--        <activity-->
-<!--            android:name="org.telegram.ui.FeedWidgetConfigActivity"-->
-<!--            android:configChanges="keyboard|keyboardHidden|orientation|screenSize|uiMode"-->
-<!--            android:hardwareAccelerated="true"-->
-<!--            android:windowSoftInputMode="adjustPan">-->
-<!--            <intent-filter android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round">-->
-<!--                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE"/>-->
-<!--            </intent-filter>-->
-<!--        </activity>-->
         <activity
             android:name="org.telegram.messenger.OpenChatReceiver"
             android:configChanges="keyboard|keyboardHidden|orientation|screenSize|uiMode"
@@ -658,17 +649,6 @@
             android:foregroundServiceType="dataSync"
         />
 
-<!--        <receiver android:name=".FeedWidgetProvider">-->
-<!--            <meta-data android:name="android.appwidget.provider"-->
-<!--                android:resource="@xml/feed_widget_info" />-->
-<!--            <intent-filter>-->
-<!--                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />-->
-<!--            </intent-filter>-->
-<!--        </receiver>-->
-
-<!--        <service android:name=".FeedWidgetService"-->
-<!--            android:permission="android.permission.BIND_REMOTEVIEWS"-->
-<!--            android:exported="false" />-->
         <service
             android:name=".FilesMigrationService"
             android:exported="false"
