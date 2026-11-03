@@ -19,6 +19,11 @@ public class TGramGhostActivity extends UniversalFragment {
     private static final int ID_GHOST = 10, ID_READ = 11, ID_ONLINE = 12, ID_TYPING = 13, ID_AFTER_SEND = 14;
 
     @Override
+    protected boolean useLargeTitle() {
+        return true;
+    }
+
+    @Override
     protected CharSequence getTitle() {
         return "Ghost mode";
     }
