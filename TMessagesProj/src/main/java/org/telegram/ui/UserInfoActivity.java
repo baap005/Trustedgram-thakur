@@ -85,7 +85,7 @@ public class UserInfoActivity extends UniversalFragment implements NotificationC
 
     @Override
     protected boolean useLargeTitle() {
-        return true;
+        return TrustedConfig.isLargeTitles();
     }
 
     @Override
