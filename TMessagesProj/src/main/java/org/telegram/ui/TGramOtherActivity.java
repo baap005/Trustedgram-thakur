@@ -20,6 +20,11 @@ public class TGramOtherActivity extends UniversalFragment {
     private static final int ID_VERSION = 1, ID_CHECK = 2;
 
     @Override
+    protected boolean useLargeTitle() {
+        return true;
+    }
+
+    @Override
     protected CharSequence getTitle() {
         return "Other";
     }
