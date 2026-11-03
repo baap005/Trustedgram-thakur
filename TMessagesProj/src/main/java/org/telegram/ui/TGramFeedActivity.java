@@ -120,6 +120,8 @@ public class TGramFeedActivity extends BaseFragment implements NotificationCente
     private final HashMap<Long, Integer> oldestId = new HashMap<>();
     private final java.util.HashSet<Long> endReached = new java.util.HashSet<>();
     private final HashMap<String, Post> knownPosts = new HashMap<>();
+    // Reuse album ChatMessageCells across nested album lists to reduce allocation and bind cost.
+    private final RecyclerView.RecycledViewPool albumViewPool = new RecyclerView.RecycledViewPool();
     private boolean loadingOlder;
     private FrameLayout downButton;
     private TextView downCounter;
@@ -304,6 +306,9 @@ public class TGramFeedActivity extends BaseFragment implements NotificationCente
         listView.setLayoutManager(layoutManager);
         adapter = new Adapter();
         listView.setAdapter(adapter);
+        listView.setItemAnimator(null);
+        listView.setItemViewCacheSize(8);
+        albumViewPool.setMaxRecycledViews(0, 24);
         listView.setClipToPadding(false);
         listView.setPadding(0, top, 0, dp(12));
         // Message cells consume their own touch events, so a long press on media/text
@@ -690,6 +695,10 @@ public class TGramFeedActivity extends BaseFragment implements NotificationCente
                 MessageObject.GroupedMessages g = new MessageObject.GroupedMessages();
                 g.groupId = groupedId;
                 g.messages.addAll(target.messages);
+                // Feed renders album cells newest-first, matching the channel history adapter.
+                // Calculate positions/caption in that same visual direction so the shared caption
+                // is attached to the correct edge of the album instead of drifting to another tile.
+                g.reversed = true;
                 g.calculate();
                 target.group = g;
                 // The album's displayed timestamp belongs to its newest item.
@@ -1616,6 +1625,8 @@ public class TGramFeedActivity extends BaseFragment implements NotificationCente
             albumList = new RecyclerView(context);
             albumList.setOverScrollMode(View.OVER_SCROLL_NEVER);
             albumList.setItemAnimator(null);
+            albumList.setItemViewCacheSize(6);
+            albumList.setRecycledViewPool(albumViewPool);
             albumList.setNestedScrollingEnabled(false);
             albumList.setClipChildren(false);
             GridLayoutManagerFixed albumManager = new GridLayoutManagerFixed(context, 1000, LinearLayoutManager.VERTICAL, true) {
@@ -1682,6 +1693,7 @@ public class TGramFeedActivity extends BaseFragment implements NotificationCente
                 @Override
                 public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
                     ChatMessageCell cell = (ChatMessageCell) holder.itemView;
+                    cell.setDelegate(delegate);
                     cell.isChat = false;
                     cell.setFullyDraw(true);
                     // Match ChatActivity's grouped-message edge flags. These are required
@@ -1878,7 +1890,7 @@ public class TGramFeedActivity extends BaseFragment implements NotificationCente
                 albumMessages.clear();
                 albumMessages.addAll(post.messages);
                 // same order as the chat list: newest id first (the grid is reversed like in a chat)
-                Collections.sort(albumMessages, (a, b) -> b.getId() - a.getId());
+                Collections.sort(albumMessages, (a, b) -> Integer.compare(b.getId(), a.getId()));
                 albumGroup = post.group;
                 albumAdapter.notifyDataSetChanged();
                 for (ChatMessageCell c : cells) c.setVisibility(View.GONE);
