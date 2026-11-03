@@ -74,28 +74,12 @@ public class TrustedConfig {
         prefs().edit().putBoolean("ios_style", v).apply();
     }
 
-    public static boolean isFeedTab() {
-        return prefs().getBoolean("feed_tab", true);
-    }
-
-    public static void setFeedTab(boolean v) {
-        prefs().edit().putBoolean("feed_tab", v).apply();
-    }
-
     public static boolean isTitleCentered() {
         return prefs().getBoolean("title_center", true);
     }
 
     public static void setTitleCentered(boolean v) {
         prefs().edit().putBoolean("title_center", v).apply();
-    }
-
-    public static boolean isFeedUnreadCounter() {
-        return prefs().getBoolean("feed_unread", true);
-    }
-
-    public static void setFeedUnreadCounter(boolean v) {
-        prefs().edit().putBoolean("feed_unread", v).apply();
     }
 
     /** The text at the top of the chat list. */
@@ -170,23 +154,6 @@ public class TrustedConfig {
 
     public static void setLargeTitles(boolean value) {
         prefs().edit().putBoolean("large_titles", value).apply();
-    }
-
-    public static boolean isFeedWide() {
-        return prefs().getBoolean("feed_wide", true);
-    }
-
-    public static void setFeedWide(boolean v) {
-        prefs().edit().putBoolean("feed_wide", v).apply();
-    }
-
-    public static boolean isFeedArchive() {
-        return prefs().getBoolean("feed_archive", false);
-    }
-
-    public static void setFeedArchive(boolean v) {
-        prefs().edit().putBoolean("feed_archive", v).apply();
-        TrustedFeed.dirty = true;
     }
 
     // ------------------------------------------------------------------ admin-managed switches
