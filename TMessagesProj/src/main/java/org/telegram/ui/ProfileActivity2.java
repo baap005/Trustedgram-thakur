@@ -524,10 +524,10 @@ public class ProfileActivity2 extends BaseFragment implements
                     items.add(ProfileLocationCell.Factory.of(ID_BIZ_LOCATION, userInfo.business_location));
                 }
                 if (!TextUtils.isEmpty(userInfo.about)) {
-                    items.add(TextDetailCell.Factory.of(ID_BIO, userInfo.about, "bio"));
+                    items.add(TextDetailCell.Factory.of(ID_BIO, "bio", userInfo.about));
                 }
                 if (!TextUtils.isEmpty(userInfo.note)) {
-                    items.add(TextDetailCell.Factory.of(ID_NOTE, userInfo.note, "note"));
+                    items.add(TextDetailCell.Factory.of(ID_NOTE, "note", userInfo.note));
                 }
             }
         } else if (chat != null) {
