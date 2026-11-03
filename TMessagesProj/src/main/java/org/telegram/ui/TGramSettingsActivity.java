@@ -13,6 +13,11 @@ import java.util.ArrayList;
 /** General: profile ID/DC, chat list clean-up options. */
 public class TGramSettingsActivity extends UniversalFragment {
 
+    @Override
+    protected boolean isTGramPage() {
+        return true;
+    }
+
     private static final int ID_IDDC = 1, ID_STORIES = 2, ID_FAB = 3;
     private static final String[] IDDC = {"Hide", "Telegram API", "Bot API"};
 
