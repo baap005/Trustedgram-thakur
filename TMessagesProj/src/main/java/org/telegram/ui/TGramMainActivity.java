@@ -108,17 +108,21 @@ public class TGramMainActivity extends UniversalFragment {
         if (headerView == null) headerView = buildHeader(getContext());
         items.add(UItem.asCustom(headerView, 190));
         items.add(UItem.asHeader("Categories"));
+        adapter.whiteSectionStart();
         items.add(UItem.asButton(ID_GENERAL, R.drawable.msg_settings, "General"));
         items.add(UItem.asButton(ID_APPEARANCE, R.drawable.msg_palette, "Appearance"));
         items.add(UItem.asButton(ID_FOLDERS, R.drawable.msg_folders, "Chat Folders"));
         items.add(UItem.asButton(ID_FEED, R.drawable.msg_channel, "Feed"));
         items.add(UItem.asButton(ID_GHOST, R.drawable.ghost, "Ghost mode"));
         items.add(UItem.asButton(ID_OTHER, R.drawable.msg_info, "Other"));
+        adapter.whiteSectionEnd();
         items.add(UItem.asShadow(null));
         items.add(UItem.asHeader("Links"));
+        adapter.whiteSectionStart();
         for (int i = 0; i < LINKS.length; i++) {
             items.add(UItem.asButton(ID_LINK + i, LINK_ICONS[i], LINKS[i][0], "@" + LINKS[i][1]));
         }
+        adapter.whiteSectionEnd();
         items.add(UItem.asShadow("TrustedGram \u2022 Powered by VTH NETWORK"));
     }
 
