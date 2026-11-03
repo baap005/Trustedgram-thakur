@@ -420,7 +420,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         topView.setElevation(dp(3));
 
         avatarContainer = new FrameLayout(context);
-        topView.addView(avatarContainer, LayoutHelper.createFrame(128, 128, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 18, 0, 0));
+        topView.addView(avatarContainer, LayoutHelper.createFrame(104, 104, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 0, 0, 0));
         avatarContainer.setOnClickListener(v -> {
             TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(UserConfig.getInstance(currentAccount).getClientUserId());
             if (user == null) {
@@ -474,7 +474,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         cameraImageView.setImageResource(R.drawable.filled_premium_camera);
         cameraBackground.addView(cameraImageView, LayoutHelper.createFrame(22, 22, Gravity.CENTER));
         cameraButton.addView(cameraBackground, LayoutHelper.createFrame(30, 30));
-        avatarContainer.addView(cameraButton, LayoutHelper.createFrame(30, 30, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 29, 61, 0, 0));
+        avatarContainer.addView(cameraButton, LayoutHelper.createFrame(30, 30, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 29, 56, 0, 0));
         ScaleStateListAnimator.apply(cameraButton);
 
         titleView = new TextView(context);
@@ -483,7 +483,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         titleView.setGravity(Gravity.CENTER);
         titleView.setSingleLine();
         titleView.setEllipsize(TextUtils.TruncateAt.END);
-        topView.addView(titleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 24, 105, 24, 0));
+        topView.addView(titleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 24, 108, 24, 0));
 
         subtitleView = new TextView(context);
         subtitleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12.2f);
