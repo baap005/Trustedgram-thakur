@@ -60,7 +60,9 @@ import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.Cells.ChatUnreadCell;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
+import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
 import org.telegram.ui.Components.ItemOptions;
+import org.telegram.ui.Components.ReactionsContainerLayout;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 
@@ -130,6 +132,18 @@ public class TGramFeedActivity extends BaseFragment implements NotificationCente
     private TextView statusView;
     private TextView subtitleView;
     private TextView floatingDate;
+    private FrameLayout rootFrame;
+    private View[] normalBar;
+    private View[] selectionBar;
+    private TextView selCount;
+    private ImageView selLink;
+    private final java.util.LinkedHashSet<String> selected = new java.util.LinkedHashSet<>();
+    private FrameLayout menuOverlay;
+    private FrameLayout pinnedBar;
+    private TextView pinnedTitle;
+    private TextView pinnedText;
+    private final ArrayList<Post> pinnedPosts = new ArrayList<>();
+    private int pinnedCursor;
     private final Runnable hideFloatingDate = () -> {
         if (floatingDate != null) floatingDate.animate().alpha(0f).setDuration(220).start();
     };
@@ -402,6 +416,113 @@ public class TGramFeedActivity extends BaseFragment implements NotificationCente
         FrameLayout.LayoutParams alp = LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 44, Gravity.TOP | Gravity.RIGHT, 0, 0, 8, 0);
         alp.topMargin = barTop;
         frame.addView(actionPill, alp);
+        rootFrame = frame;
+        normalBar = new View[]{backWrap, titlePill, actionPill};
+
+        // ---- selection bar (tap a post): [x]  N Selected  [copy] [link] [forward]
+        ImageView selClose = barIcon(context, R.drawable.ic_close_white);
+        GradientDrawable sbg = new GradientDrawable();
+        sbg.setShape(GradientDrawable.OVAL);
+        sbg.setColor(barColor());
+        FrameLayout selBack = new FrameLayout(context);
+        selBack.setBackground(sbg);
+        selBack.addView(selClose, LayoutHelper.createFrame(44, 44, Gravity.CENTER));
+        selBack.setOnClickListener(v -> clearSelection());
+        FrameLayout.LayoutParams sblp = LayoutHelper.createFrame(44, 44, Gravity.TOP | Gravity.LEFT, 8, 0, 0, 0);
+        sblp.topMargin = barTop;
+        frame.addView(selBack, sblp);
+
+        selCount = new TextView(context);
+        selCount.setTextSize(17);
+        selCount.setTypeface(Typeface.DEFAULT_BOLD);
+        selCount.setTextColor(barText());
+        selCount.setPadding(dp(8), 0, dp(8), 0);
+        View selPill = pill(context, selCount);
+        FrameLayout.LayoutParams splp = LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 44, Gravity.TOP | Gravity.LEFT, 60, 0, 0, 0);
+        splp.topMargin = barTop;
+        frame.addView(selPill, splp);
+
+        LinearLayout selTools = new LinearLayout(context);
+        selTools.setOrientation(LinearLayout.HORIZONTAL);
+        ImageView selCopy = barIcon(context, R.drawable.msg_copy);
+        selCopy.setOnClickListener(v -> copySelectedText());
+        selTools.addView(selCopy, LayoutHelper.createLinear(40, 44));
+        selLink = barIcon(context, R.drawable.msg_link);
+        selLink.setOnClickListener(v -> {
+            ArrayList<Post> sel = selectedPosts();
+            if (sel.size() == 1) {
+                AndroidUtilities.addToClipboard(linkOf(sel.get(0)));
+                toast("Link copied");
+            }
+        });
+        selTools.addView(selLink, LayoutHelper.createLinear(40, 44));
+        ImageView selForward = barIcon(context, R.drawable.msg_forward);
+        selForward.setOnClickListener(v -> forwardPosts(selectedPosts()));
+        selTools.addView(selForward, LayoutHelper.createLinear(40, 44));
+        View selActions = pill(context, selTools);
+        FrameLayout.LayoutParams salp = LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 44, Gravity.TOP | Gravity.RIGHT, 0, 0, 8, 0);
+        salp.topMargin = barTop;
+        frame.addView(selActions, salp);
+        selectionBar = new View[]{selBack, selPill, selActions};
+        for (View v : selectionBar) v.setVisibility(View.GONE);
+
+        // bottom "Forward" button while posts are selected
+        final TextView forwardBtn = new TextView(context);
+        forwardBtn.setText("Forward");
+        forwardBtn.setTextSize(16);
+        forwardBtn.setTypeface(Typeface.DEFAULT_BOLD);
+        forwardBtn.setTextColor(barText());
+        forwardBtn.setGravity(Gravity.CENTER);
+        forwardBtn.setCompoundDrawablesWithIntrinsicBounds(R.drawable.msg_forward, 0, 0, 0);
+        forwardBtn.setCompoundDrawablePadding(dp(8));
+        forwardBtn.getCompoundDrawables()[0].setColorFilter(barText(), android.graphics.PorterDuff.Mode.MULTIPLY);
+        forwardBtn.setPadding(dp(26), 0, dp(26), 0);
+        GradientDrawable fbg = new GradientDrawable();
+        fbg.setColor(barColor());
+        fbg.setCornerRadius(dp(24));
+        forwardBtn.setBackground(fbg);
+        forwardBtn.setOnClickListener(v -> forwardPosts(selectedPosts()));
+        forwardBtn.setVisibility(View.GONE);
+        frame.addView(forwardBtn, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 48, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL, 0, 0, 0, 16));
+        selectionBar = new View[]{selBack, selPill, selActions, forwardBtn};
+
+        // ---- pinned posts bar, like the pinned message bar of a chat
+        pinnedBar = new FrameLayout(context);
+        GradientDrawable pbg = new GradientDrawable();
+        pbg.setColor(barColor());
+        pbg.setCornerRadius(dp(14));
+        pinnedBar.setBackground(pbg);
+        View accent = new View(context);
+        GradientDrawable ag = new GradientDrawable();
+        ag.setColor(Theme.getColor(Theme.key_chat_messageLinkIn));
+        ag.setCornerRadius(dp(2));
+        accent.setBackground(ag);
+        pinnedBar.addView(accent, LayoutHelper.createFrame(3, 32, Gravity.LEFT | Gravity.CENTER_VERTICAL, 10, 0, 0, 0));
+        LinearLayout pinTexts = new LinearLayout(context);
+        pinTexts.setOrientation(LinearLayout.VERTICAL);
+        pinnedTitle = new TextView(context);
+        pinnedTitle.setTextSize(13);
+        pinnedTitle.setTypeface(Typeface.DEFAULT_BOLD);
+        pinnedTitle.setTextColor(Theme.getColor(Theme.key_chat_messageLinkIn));
+        pinnedTitle.setSingleLine(true);
+        pinTexts.addView(pinnedTitle);
+        pinnedText = new TextView(context);
+        pinnedText.setTextSize(14);
+        pinnedText.setTextColor(barText());
+        pinnedText.setSingleLine(true);
+        pinnedText.setEllipsize(TextUtils.TruncateAt.END);
+        pinTexts.addView(pinnedText);
+        pinnedBar.addView(pinTexts, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 22, 0, 52, 0));
+        ImageView unpin = barIcon(context, R.drawable.msg_unpin);
+        unpin.setOnClickListener(v -> {
+            if (!pinnedPosts.isEmpty()) setPinned(pinnedPosts.get(Math.min(pinnedCursor, pinnedPosts.size() - 1)), false);
+        });
+        pinnedBar.addView(unpin, LayoutHelper.createFrame(44, 44, Gravity.RIGHT | Gravity.CENTER_VERTICAL, 0, 0, 4, 0));
+        pinnedBar.setOnClickListener(v -> scrollToPinned());
+        pinnedBar.setVisibility(View.GONE);
+        FrameLayout.LayoutParams pblp = LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.TOP, 8, 0, 8, 0);
+        pblp.topMargin = AndroidUtilities.statusBarHeight + dp(60);
+        frame.addView(pinnedBar, pblp);
 
         // floating "jump to the bottom" arrow, bottom right, like in channels
         downButton = new FrameLayout(context);
@@ -586,6 +707,7 @@ public class TGramFeedActivity extends BaseFragment implements NotificationCente
         statusView.setVisibility(posts.isEmpty() ? View.VISIBLE : View.GONE);
         if (posts.isEmpty()) statusView.setText("No posts found.");
         updateSubtitle();
+        refreshPins();
         scrollToStart();
     }
 
@@ -948,34 +1070,263 @@ public class TGramFeedActivity extends BaseFragment implements NotificationCente
         return username != null ? "https://t.me/" + username + "/" + id : "https://t.me/c/" + p.chat.id + "/" + id;
     }
 
-    private void showPostActions(final Post p) {
-        if (p == null || getParentActivity() == null || listView == null) return;
-        View anchor = null;
+    // ------------------------------------------------------------------ selection
+
+    private static String keyOf(Post p) {
+        return p.chat.id + "_" + p.first().getId();
+    }
+
+    private ArrayList<Post> selectedPosts() {
+        ArrayList<Post> out = new ArrayList<>();
+        for (Post p : posts) {
+            if (selected.contains(keyOf(p))) out.add(p);
+        }
+        return out;
+    }
+
+    private void toggleSelect(Post p) {
+        if (p == null) return;
+        String k = keyOf(p);
+        if (!selected.remove(k)) selected.add(k);
+        updateSelectionUi();
+    }
+
+    private void clearSelection() {
+        selected.clear();
+        updateSelectionUi();
+    }
+
+    private void updateSelectionUi() {
+        final boolean sel = !selected.isEmpty();
+        if (normalBar != null) for (View v : normalBar) v.setVisibility(sel ? View.GONE : View.VISIBLE);
+        if (selectionBar != null) for (View v : selectionBar) v.setVisibility(sel ? View.VISIBLE : View.GONE);
+        if (selCount != null) selCount.setText(selected.size() + " Selected");
+        if (selLink != null) selLink.setVisibility(selected.size() == 1 ? View.VISIBLE : View.GONE);
+        if (listView != null) {
+            for (int i = 0; i < listView.getChildCount(); i++) listView.getChildAt(i).invalidate();
+        }
+    }
+
+    private void copySelectedText() {
+        StringBuilder sb = new StringBuilder();
+        for (Post p : selectedPosts()) {
+            CharSequence t = textOf(p);
+            if (TextUtils.isEmpty(t)) continue;
+            if (sb.length() > 0) sb.append("\n\n");
+            sb.append(t);
+        }
+        if (sb.length() == 0) {
+            toast("Nothing to copy");
+            return;
+        }
+        AndroidUtilities.addToClipboard(sb.toString());
+        toast("Text copied");
+        clearSelection();
+    }
+
+    @Override
+    public boolean onBackPressed(boolean invoked) {
+        if (menuOverlay != null) {
+            if (invoked) hideMenuOverlay();
+            return false;
+        }
+        if (!selected.isEmpty()) {
+            if (invoked) clearSelection();
+            return false;
+        }
+        return super.onBackPressed(invoked);
+    }
+
+    // ------------------------------------------------------------------ long-press menu with reactions
+
+    private View findPostView(Post p) {
+        if (listView == null) return null;
         for (int i = 0; i < listView.getChildCount(); i++) {
             View child = listView.getChildAt(i);
-            if (child instanceof PostView && ((PostView) child).current == p) {
-                anchor = child;
-                break;
+            if (child instanceof PostView && ((PostView) child).current == p) return child;
+        }
+        return null;
+    }
+
+    private void hideMenuOverlay() {
+        if (menuOverlay != null && rootFrame != null) {
+            rootFrame.removeView(menuOverlay);
+        }
+        menuOverlay = null;
+    }
+
+    private void reactFromMenu(MessageObject mo, ReactionsLayoutInBubble.VisibleReaction vr, Post post) {
+        if (mo == null || vr == null) return;
+        if (vr.isStar) {
+            openPost(post);
+            return;
+        }
+        boolean chosen = false;
+        ArrayList<ReactionsLayoutInBubble.VisibleReaction> list = new ArrayList<>();
+        if (mo.messageOwner.reactions != null) {
+            for (TLRPC.ReactionCount rc : mo.messageOwner.reactions.results) {
+                if (rc.chosen && rc.reaction != null && !(rc.reaction instanceof TLRPC.TL_reactionPaid)) {
+                    if (vr.isSame(rc.reaction)) chosen = true;
+                    else list.add(ReactionsLayoutInBubble.VisibleReaction.fromTL(rc.reaction));
+                }
             }
         }
-        if (anchor == null) return;
+        if (!chosen) list.add(vr);
+        SendMessagesHelper.getInstance(currentAccount).sendReaction(mo, list, chosen ? null : vr, false, false, this, null);
+    }
+
+    private void addMenuRow(LinearLayout card, int icon, String text, boolean top, boolean bottom, final Runnable action) {
+        ActionBarMenuSubItem item = new ActionBarMenuSubItem(getParentActivity(), top, bottom, getResourceProvider());
+        item.setTextAndIcon(text, icon);
+        item.setOnClickListener(v -> {
+            hideMenuOverlay();
+            action.run();
+        });
+        card.addView(item, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48));
+    }
+
+    /** Hold a post: Telegram's reaction bar on top and the same kind of menu as in a channel. */
+    private void showPostActions(final Post p) {
+        if (p == null || getParentActivity() == null || rootFrame == null) return;
+        hideMenuOverlay();
+        final Context ctx = getParentActivity();
+        final View anchor = findPostView(p);
+
+        final FrameLayout overlay = new FrameLayout(ctx);
+        overlay.setBackgroundColor(0x73000000);
+        overlay.setOnClickListener(v -> hideMenuOverlay());
+
+        final LinearLayout column = new LinearLayout(ctx);
+        column.setOrientation(LinearLayout.VERTICAL);
+        column.setClipChildren(false);
+
+        // reactions
+        MessageObject primary = p.group != null ? p.group.findPrimaryMessageObject() : p.first();
+        if (primary == null) primary = p.first();
+        final MessageObject reactTarget = primary;
+        try {
+            final ReactionsContainerLayout reactions = new ReactionsContainerLayout(ReactionsContainerLayout.TYPE_DEFAULT, this, ctx, currentAccount, getResourceProvider());
+            reactions.forceAttachToParent = true;
+            final int pad = 22, sPad = 24;
+            reactions.setPadding(dp(4) + (LocaleController.isRTL ? 0 : sPad), dp(4), dp(4) + (LocaleController.isRTL ? sPad : 0), dp(pad));
+            reactions.setDelegate(new ReactionsContainerLayout.ReactionsContainerDelegate() {
+                @Override
+                public void onReactionClicked(View v, ReactionsLayoutInBubble.VisibleReaction visibleReaction, boolean longpress, boolean addToRecent) {
+                    hideMenuOverlay();
+                    reactFromMenu(reactTarget, visibleReaction, p);
+                }
+
+                @Override
+                public void hideMenu() {
+                    hideMenuOverlay();
+                }
+            });
+            TLRPC.ChatFull full = MessagesController.getInstance(currentAccount).getChatFull(p.chat.id);
+            if (full == null) MessagesController.getInstance(currentAccount).loadFullChat(p.chat.id, 0, true);
+            reactions.setMessage(reactTarget, full, true);
+            reactions.setTransitionProgress(1);
+            column.addView(reactions, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, (int) (52 + reactions.getTopOffset() / AndroidUtilities.density + pad), Gravity.LEFT, 0, 0, 0, -20));
+        } catch (Throwable e) {
+            org.telegram.messenger.FileLog.e(e);
+        }
+
+        // menu card
         final CharSequence text = textOf(p);
-        ItemOptions options = ItemOptions.makeOptions(this, anchor);
-        options.add(R.drawable.msg_openin, "Show in chat", () -> openPost(p));
-        options.add(R.drawable.msg_channel, "Open channel", () -> openChannel(p));
-        options.addGap();
+        final boolean pinned = TrustedFeed.isPinned(p.chat.id, p.first().getId());
+        LinearLayout card = new LinearLayout(ctx);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setBackground(Theme.createRoundRectDrawable(dp(12), Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground)));
+        if (android.os.Build.VERSION.SDK_INT >= 21) card.setElevation(dp(8));
+        ArrayList<String> names = new ArrayList<>();
+        ArrayList<Integer> icons = new ArrayList<>();
+        ArrayList<Runnable> acts = new ArrayList<>();
+        names.add("Show in chat"); icons.add(R.drawable.msg_openin); acts.add(() -> openPost(p));
         if (!TextUtils.isEmpty(text)) {
-            options.add(R.drawable.msg_copy, "Copy", () -> {
+            names.add("Copy"); icons.add(R.drawable.msg_copy);
+            acts.add(() -> {
                 AndroidUtilities.addToClipboard(text);
                 toast("Text copied");
             });
         }
-        options.add(R.drawable.msg_link, "Copy link", () -> {
+        names.add("Copy link"); icons.add(R.drawable.msg_link);
+        acts.add(() -> {
             AndroidUtilities.addToClipboard(linkOf(p));
             toast("Link copied");
         });
-        options.add(R.drawable.msg_forward, "Forward", () -> forward(p));
-        options.show();
+        names.add("Forward"); icons.add(R.drawable.msg_forward); acts.add(() -> forward(p));
+        names.add(pinned ? "Unpin post" : "Pin post"); icons.add(pinned ? R.drawable.msg_unpin : R.drawable.msg_pin);
+        acts.add(() -> setPinned(p, !pinned));
+        names.add("Select"); icons.add(R.drawable.msg_select); acts.add(() -> toggleSelect(p));
+        for (int i = 0; i < names.size(); i++) {
+            addMenuRow(card, icons.get(i), names.get(i), i == 0, i == names.size() - 1, acts.get(i));
+        }
+        column.addView(card, LayoutHelper.createLinear(220, LayoutHelper.WRAP_CONTENT, Gravity.LEFT, 0, 0, 0, 0));
+
+        overlay.addView(column, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 16, 0, 16, 0));
+        rootFrame.addView(overlay, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        menuOverlay = overlay;
+
+        column.setAlpha(0f);
+        column.post(() -> {
+            if (menuOverlay != overlay) return;
+            int[] a = new int[2], r = new int[2];
+            if (anchor != null) anchor.getLocationInWindow(a);
+            rootFrame.getLocationInWindow(r);
+            float center = anchor != null ? a[1] - r[1] + anchor.getHeight() / 2f : rootFrame.getHeight() / 2f;
+            float y = center - column.getHeight() / 2f;
+            float min = AndroidUtilities.statusBarHeight + dp(64);
+            float max = rootFrame.getHeight() - column.getHeight() - dp(16);
+            column.setTranslationY(Math.max(min, Math.min(y, max)));
+            column.animate().alpha(1f).setDuration(140).start();
+        });
+    }
+
+    // ------------------------------------------------------------------ pinned posts
+
+    private void setPinned(Post p, boolean pin) {
+        TrustedFeed.setPinned(p.chat.id, p.first().getId(), pin);
+        toast(pin ? "Post pinned" : "Post unpinned");
+        refreshPins();
+        if (adapter != null) adapter.notifyDataSetChanged();
+    }
+
+    private void refreshPins() {
+        if (pinnedBar == null) return;
+        pinnedPosts.clear();
+        for (Post p : posts) {
+            if (TrustedFeed.isPinned(p.chat.id, p.first().getId())) pinnedPosts.add(p);
+        }
+        // newest pinned post first, like the pinned bar of a chat
+        Collections.sort(pinnedPosts, (a, b) -> b.date - a.date);
+        if (pinnedCursor >= pinnedPosts.size()) pinnedCursor = 0;
+        final boolean show = !pinnedPosts.isEmpty();
+        pinnedBar.setVisibility(show ? View.VISIBLE : View.GONE);
+        if (show) {
+            Post p = pinnedPosts.get(pinnedCursor);
+            pinnedTitle.setText(pinnedPosts.size() > 1 ? "Pinned post #" + (pinnedCursor + 1) + " of " + pinnedPosts.size() : "Pinned post");
+            CharSequence t = textOf(p);
+            pinnedText.setText(TextUtils.isEmpty(t) ? p.chat.title + " \u2022 media" : p.chat.title + ": " + t.toString().replace('\n', ' '));
+        }
+        final int base = AndroidUtilities.statusBarHeight + dp(62);
+        listView.setPadding(0, base + (show ? dp(54) : 0), 0, dp(12));
+        if (floatingDate != null) {
+            FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) floatingDate.getLayoutParams();
+            lp.topMargin = AndroidUtilities.statusBarHeight + dp(60) + (show ? dp(54) : 0);
+            floatingDate.setLayoutParams(lp);
+        }
+    }
+
+    private void scrollToPinned() {
+        if (pinnedPosts.isEmpty()) return;
+        Post target = pinnedPosts.get(Math.min(pinnedCursor, pinnedPosts.size() - 1));
+        for (int i = 0; i < items.size(); i++) {
+            if (items.get(i).post == target) {
+                layoutManager.scrollToPositionWithOffset(i, AndroidUtilities.statusBarHeight + dp(62) + dp(54));
+                break;
+            }
+        }
+        pinnedCursor = (pinnedCursor + 1) % pinnedPosts.size();
+        refreshPins();
     }
 
     private void toast(String s) {
@@ -983,6 +1334,13 @@ public class TGramFeedActivity extends BaseFragment implements NotificationCente
     }
 
     private void forward(final Post p) {
+        ArrayList<Post> one = new ArrayList<>();
+        one.add(p);
+        forwardPosts(one);
+    }
+
+    private void forwardPosts(final ArrayList<Post> list) {
+        if (list == null || list.isEmpty()) return;
         Bundle args = new Bundle();
         args.putBoolean("onlySelect", true);
         args.putBoolean("canSelectTopics", true);
@@ -990,9 +1348,17 @@ public class TGramFeedActivity extends BaseFragment implements NotificationCente
         DialogsActivity picker = new DialogsActivity(args);
         picker.setDelegate((fragment, dids, message, param, notify, scheduleDate, scheduleRepeatPeriod, topicsFragment) -> {
             for (MessagesStorage.TopicKey key : dids) {
-                sendForward(currentAccount, new ArrayList<>(p.messages), key.dialogId);
+                // one send per channel, so every forwarded batch comes from a single source chat
+                java.util.LinkedHashMap<Long, ArrayList<MessageObject>> byChat = new java.util.LinkedHashMap<>();
+                for (Post p : list) {
+                    ArrayList<MessageObject> l = byChat.get(p.chat.id);
+                    if (l == null) byChat.put(p.chat.id, l = new ArrayList<>());
+                    l.addAll(p.messages);
+                }
+                for (ArrayList<MessageObject> l : byChat.values()) sendForward(currentAccount, l, key.dialogId);
             }
             fragment.finishFragment();
+            clearSelection();
             toast("Forwarded");
             return true;
         });
@@ -1119,6 +1485,30 @@ public class TGramFeedActivity extends BaseFragment implements NotificationCente
         private final ArrayList<ChatMessageCell> cells = new ArrayList<>();
         private final ChatMessageCell.ChatMessageCellDelegate delegate;
         private Post current;
+        private final android.graphics.Paint selPaint = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
+
+        @Override
+        protected void dispatchDraw(android.graphics.Canvas canvas) {
+            final boolean sel = current != null && selected.contains(keyOf(current));
+            if (sel) {
+                selPaint.setStyle(android.graphics.Paint.Style.FILL);
+                selPaint.setColor(Theme.getColor(Theme.key_chat_selectedBackground));
+                canvas.drawRect(0, 0, getWidth(), getHeight(), selPaint);
+            }
+            super.dispatchDraw(canvas);
+            if (sel) {
+                final float cx = dp(20), cy = getHeight() / 2f;
+                selPaint.setStyle(android.graphics.Paint.Style.FILL);
+                selPaint.setColor(Theme.getColor(Theme.key_featuredStickers_addButton));
+                canvas.drawCircle(cx, cy, dp(11), selPaint);
+                selPaint.setStyle(android.graphics.Paint.Style.STROKE);
+                selPaint.setStrokeWidth(dp(2));
+                selPaint.setStrokeCap(android.graphics.Paint.Cap.ROUND);
+                selPaint.setColor(0xFFFFFFFF);
+                canvas.drawLine(cx - dp(5), cy, cx - dp(1.5f), cy + dp(3.5f), selPaint);
+                canvas.drawLine(cx - dp(1.5f), cy + dp(3.5f), cx + dp(5), cy - dp(3.5f), selPaint);
+            }
+        }
 
         PostView(Context context) {
             super(context);
@@ -1235,8 +1625,8 @@ public class TGramFeedActivity extends BaseFragment implements NotificationCente
             albumList.setAdapter(albumAdapter);
             addView(albumList, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
 
-            // tap or hold anywhere on a post (outside links, buttons, reactions) opens the post menu
-            setOnClickListener(v -> showPostActions(current));
+            // tap a post to select it (Copy / Copy link / Forward in the top bar); hold it for the full menu with reactions
+            setOnClickListener(v -> toggleSelect(current));
             setOnLongClickListener(v -> {
                 showPostActions(current);
                 return true;
@@ -1329,7 +1719,11 @@ public class TGramFeedActivity extends BaseFragment implements NotificationCente
                 }
 
                 public void didPressOther(ChatMessageCell cell, float otherX, float otherY) {
-                    showPostActions(current);
+                    toggleSelect(current);
+                }
+
+                public boolean hasSelectedMessages() {
+                    return !selected.isEmpty();
                 }
 
                 // "Show more" on a collapsed quote / long text and quote expand: re-measure the post
@@ -1358,7 +1752,7 @@ public class TGramFeedActivity extends BaseFragment implements NotificationCente
                 }
 
                 public void didPressTime(ChatMessageCell cell) {
-                    showPostActions(current);
+                    toggleSelect(current);
                 }
 
                 public boolean needPlayMessage(ChatMessageCell cell, MessageObject messageObject, boolean muted) {
@@ -1390,7 +1784,8 @@ public class TGramFeedActivity extends BaseFragment implements NotificationCente
             avatarDrawable.setInfo(post.chat);
             avatar.setForUserOrChat(post.chat, avatarDrawable);
             nameView.setText(post.chat.title);
-            dateView.setText(LocaleController.getInstance().getFormatterDay().format(post.date * 1000L));
+            dateView.setText(LocaleController.getInstance().getFormatterDay().format(post.date * 1000L)
+                + (TrustedFeed.isPinned(post.chat.id, post.first().getId()) ? "  \uD83D\uDCCC Pinned" : ""));
             int n = post.messages.size();
             final boolean album = post.group != null && n > 1;
             albumList.setVisibility(album ? View.VISIBLE : View.GONE);
