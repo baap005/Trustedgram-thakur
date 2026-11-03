@@ -1208,6 +1208,30 @@ public class TGramFeedActivity extends BaseFragment implements NotificationCente
         SendMessagesHelper.getInstance(currentAccount).sendReaction(mo, list, chosen ? null : vr, false, false, this, null);
     }
 
+    private void savePostMediaToGallery(Post p) {
+        if (p == null || p.messages.isEmpty()) return;
+        int saved = 0;
+        for (MessageObject mo : p.messages) {
+            if (mo == null || mo.messageOwner == null || mo.messageOwner.attachPath == null || mo.messageOwner.attachPath.length() == 0) continue;
+            try {
+                java.io.File file = new java.io.File(mo.messageOwner.attachPath);
+                if (!file.exists() || !file.isFile()) continue;
+                for (Method method : MediaController.class.getMethods()) {
+                    if (!"saveFile".equals(method.getName()) || method.getParameterTypes().length != 5) continue;
+                    Class<?>[] types = method.getParameterTypes();
+                    if (types[0] != String.class || !Context.class.isAssignableFrom(types[1]) || types[2] != int.class || types[3] != String.class || types[4] != String.class) continue;
+                    Object receiver = java.lang.reflect.Modifier.isStatic(method.getModifiers()) ? null : MediaController.getInstance();
+                    method.invoke(receiver, file.getAbsolutePath(), getParentActivity(), 0, null, null);
+                    saved++;
+                    break;
+                }
+            } catch (Throwable e) {
+                org.telegram.messenger.FileLog.e(e);
+            }
+        }
+        toast(saved > 0 ? (saved == 1 ? "Saved to Gallery" : saved + " items saved to Gallery") : "Media is not downloaded yet");
+    }
+
     private void addMenuRow(LinearLayout card, int icon, String text, boolean top, boolean bottom, final Runnable action) {
         ActionBarMenuSubItem item = new ActionBarMenuSubItem(getParentActivity(), top, bottom, getResourceProvider());
         item.setTextAndIcon(text, icon);
@@ -1274,6 +1298,7 @@ public class TGramFeedActivity extends BaseFragment implements NotificationCente
         ArrayList<Integer> icons = new ArrayList<>();
         ArrayList<Runnable> acts = new ArrayList<>();
         names.add("Show in chat"); icons.add(R.drawable.msg_openin); acts.add(() -> openPost(p));
+        names.add("Reply"); icons.add(R.drawable.msg_reply); acts.add(() -> openPost(p));
         if (!TextUtils.isEmpty(text)) {
             names.add("Copy"); icons.add(R.drawable.msg_copy);
             acts.add(() -> {
@@ -1286,7 +1311,14 @@ public class TGramFeedActivity extends BaseFragment implements NotificationCente
             AndroidUtilities.addToClipboard(linkOf(p));
             toast("Link copied");
         });
+        if (p.messages.stream().anyMatch(mo -> mo != null && (mo.isPhoto() || mo.isVideo() || mo.getDocument() != null))) {
+            names.add("Save to Gallery"); icons.add(R.drawable.msg_gallery); acts.add(() -> savePostMediaToGallery(p));
+        }
         names.add("Forward"); icons.add(R.drawable.msg_forward); acts.add(() -> forward(p));
+        names.add("Report"); icons.add(R.drawable.msg_report); acts.add(() -> {
+            toast("Opening the original post for reporting");
+            openPost(p);
+        });
         names.add(pinned ? "Unpin post" : "Pin post"); icons.add(pinned ? R.drawable.msg_unpin : R.drawable.msg_pin);
         acts.add(() -> setPinned(p, !pinned));
         names.add("Select"); icons.add(R.drawable.msg_select); acts.add(() -> toggleSelect(p));
