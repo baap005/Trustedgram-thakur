@@ -29,7 +29,7 @@ public class TGramMainActivity extends UniversalFragment {
         return true;
     }
 
-    private static final int ID_GENERAL = 1, ID_APPEARANCE = 2, ID_FEED = 3, ID_GHOST = 4, ID_OTHER = 5, ID_FOLDERS = 6, ID_LINK = 100;
+    private static final int ID_GENERAL = 1, ID_APPEARANCE = 2, ID_GHOST = 4, ID_OTHER = 5, ID_FOLDERS = 6, ID_LINK = 100;
 
     private static final String[][] LINKS = {
         {"Updates", "trustedgram"},
@@ -117,7 +117,6 @@ public class TGramMainActivity extends UniversalFragment {
         items.add(UItem.asButton(ID_GENERAL, R.drawable.msg_settings, "General"));
         items.add(UItem.asButton(ID_APPEARANCE, R.drawable.msg_palette, "Appearance"));
         items.add(UItem.asButton(ID_FOLDERS, R.drawable.msg_folders, "Chat Folders"));
-        items.add(UItem.asButton(ID_FEED, R.drawable.msg_channel, "Feed"));
         items.add(UItem.asButton(ID_GHOST, R.drawable.ghost, "Ghost mode"));
         items.add(UItem.asButton(ID_OTHER, R.drawable.msg_info, "Other"));
         items.add(UItem.asShadow(null));
@@ -134,7 +133,6 @@ public class TGramMainActivity extends UniversalFragment {
             case ID_GENERAL: presentFragment(new TGramSettingsActivity()); return;
             case ID_APPEARANCE: presentFragment(new TGramAppearanceActivity()); return;
             case ID_FOLDERS: presentFragment(new TGramFoldersActivity()); return;
-            case ID_FEED: presentFragment(new TGramFeedChannelsActivity()); return;
             case ID_GHOST: presentFragment(new TGramGhostActivity()); return;
             case ID_OTHER: presentFragment(new TGramOtherActivity()); return;
         }
