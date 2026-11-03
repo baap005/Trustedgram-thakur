@@ -22,6 +22,11 @@ public class TGramSettingsActivity extends UniversalFragment {
     private static final String[] IDDC = {"Hide", "Telegram API", "Bot API"};
 
     @Override
+    protected boolean useLargeTitle() {
+        return true;
+    }
+
+    @Override
     protected CharSequence getTitle() {
         return "General";
     }
