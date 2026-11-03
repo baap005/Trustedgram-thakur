@@ -3909,6 +3909,15 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             });
 
             actionsView = new ProfileActionsView(context, dp(74));
+            // TrustedGram iOS-style action dock: one floating, softly outlined surface
+            // behind the existing functional call/message/mute actions.
+            android.graphics.drawable.GradientDrawable actionsDock = new android.graphics.drawable.GradientDrawable();
+            actionsDock.setColor(multAlpha(getThemedColor(Theme.key_windowBackgroundWhite), 0.94f));
+            actionsDock.setCornerRadius(dp(24));
+            actionsDock.setStroke(dp(1), multAlpha(getThemedColor(Theme.key_windowBackgroundWhiteBlackText), 0.08f));
+            actionsView.setBackground(actionsDock);
+            actionsView.setElevation(dp(5));
+            actionsView.setClipToOutline(true);
             setActionsMode();
             updateNotifications(false);
 
