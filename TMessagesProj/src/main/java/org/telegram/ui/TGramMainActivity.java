@@ -24,6 +24,11 @@ import java.util.ArrayList;
 /** Main TrustedGram settings page: app header with build number, categories and our channels. */
 public class TGramMainActivity extends UniversalFragment {
 
+    @Override
+    protected boolean isTGramPage() {
+        return true;
+    }
+
     private static final int ID_GENERAL = 1, ID_APPEARANCE = 2, ID_FEED = 3, ID_GHOST = 4, ID_OTHER = 5, ID_FOLDERS = 6, ID_LINK = 100;
 
     private static final String[][] LINKS = {
