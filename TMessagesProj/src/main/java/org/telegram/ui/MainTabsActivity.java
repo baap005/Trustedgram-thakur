@@ -519,6 +519,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
 //        o.setBlur(true);
         o.translate(-dp(8), -dp(4));
         o.setMaxHeight(dp(400));
+        o.setBlur(true);
         final ShapeDrawable bg = Theme.createRoundRectDrawable(dp(28), getThemedColor(Theme.key_windowBackgroundWhite));
         bg.getPaint().setShadowLayer(dp(6), 0, dp(1), Theme.multAlpha(0xFF000000, 0.15f));
         o.setScrimViewBackground(bg);
