@@ -4830,7 +4830,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
 
             if (rightFragmentOpenedProgress != 1) {
                 int alpha = Theme.dividerPaint.getAlpha();
-                Theme.dividerPaint.setAlpha((int) (alpha * 0.72f * (1f - rightFragmentOpenedProgress)));
+                Theme.dividerPaint.setAlpha((int) (alpha * 0.54f * (1f - rightFragmentOpenedProgress)));
                 float y = getMeasuredHeight() - 1 - rightFragmentOffset * rightFragmentOpenedProgress;
                 if (LocaleController.isRTL) {
                     canvas.drawLine(0, y, getMeasuredWidth() - left, y, Theme.dividerPaint);
