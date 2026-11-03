@@ -526,8 +526,8 @@ public class ProfileActivity2 extends BaseFragment implements
                 if (!TextUtils.isEmpty(userInfo.about)) {
                     items.add(TextDetailCell.Factory.of(ID_BIO, "bio", userInfo.about));
                 }
-                if (!TextUtils.isEmpty(userInfo.note)) {
-                    items.add(TextDetailCell.Factory.of(ID_NOTE, "note", userInfo.note));
+                if (userInfo.note != null && !TextUtils.isEmpty(userInfo.note.text)) {
+                    items.add(TextDetailCell.Factory.of(ID_NOTE, "note", userInfo.note.text));
                 }
             }
         } else if (chat != null) {
