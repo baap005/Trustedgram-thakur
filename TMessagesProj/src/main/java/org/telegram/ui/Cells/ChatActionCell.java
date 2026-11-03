@@ -3547,8 +3547,8 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
             backgroundRight = 0;
             lineWidths.clear();
             final int count = textLayout == null ? 0 : textLayout.getLineCount();
-            final int corner = dp(11);
-            final int cornerIn = dp(8);
+            final int corner = dp(14);
+            final int cornerIn = dp(9);
 
             int prevLineWidth = 0;
             for (int a = 0; a < count; a++) {
