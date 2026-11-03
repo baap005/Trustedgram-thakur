@@ -4249,7 +4249,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 updateBottomButtonY();
             }
         };
-        listView.setSections();
+        listView.setSections(dp(14), dp(22), false);
         listView.applyPaddingToSections = false;
         listView.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundGray));
         listView.setVerticalScrollBarEnabled(false);
