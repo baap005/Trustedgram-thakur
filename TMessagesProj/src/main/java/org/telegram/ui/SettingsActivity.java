@@ -185,6 +185,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     private ImageView cameraImageView;
     private TextView titleView;
     private TextView subtitleView;
+    private TextView editProfileView;
     private TextView versionView;
     public boolean hasMainTabs;
 
@@ -405,15 +406,21 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         imageUpdater.setDelegate(this);
 
         topView = new FrameLayout(context);
-        GradientDrawable profileHeaderBackground = new GradientDrawable();
-        profileHeaderBackground.setColor(Theme.multAlpha(getThemedColor(Theme.key_windowBackgroundWhite), Theme.isCurrentThemeDark() ? 0.72f : 0.92f));
-        profileHeaderBackground.setCornerRadius(dp(28));
-        profileHeaderBackground.setStroke(dp(1), Theme.multAlpha(getThemedColor(Theme.key_windowBackgroundWhiteBlackText), Theme.isCurrentThemeDark() ? 0.10f : 0.07f));
+        GradientDrawable profileHeaderBackground = new GradientDrawable(
+            GradientDrawable.Orientation.TOP_BOTTOM,
+            new int[] {
+                Theme.multAlpha(getThemedColor(Theme.key_windowBackgroundWhite), Theme.isCurrentThemeDark() ? 0.98f : 1.0f),
+                Theme.multAlpha(getThemedColor(Theme.key_windowBackgroundWhite), Theme.isCurrentThemeDark() ? 0.82f : 0.96f)
+            }
+        );
+        profileHeaderBackground.setCornerRadius(dp(30));
+        profileHeaderBackground.setStroke(dp(1), Theme.multAlpha(getThemedColor(Theme.key_windowBackgroundWhiteBlackText), Theme.isCurrentThemeDark() ? 0.16f : 0.09f));
         topView.setBackground(profileHeaderBackground);
         topView.setClipToOutline(true);
+        topView.setElevation(dp(2));
 
         avatarContainer = new FrameLayout(context);
-        topView.addView(avatarContainer, LayoutHelper.createFrame(120, 120, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 23 - 12, 0, 0));
+        topView.addView(avatarContainer, LayoutHelper.createFrame(128, 128, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 18, 0, 0));
         avatarContainer.setOnClickListener(v -> {
             TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(UserConfig.getInstance(currentAccount).getClientUserId());
             if (user == null) {
@@ -432,8 +439,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
         avatarDrawable = new AvatarDrawable();
         avatarView = new BackupImageView(context);
-        avatarView.setRoundRadius(dp(90));
-        avatarContainer.addView(avatarView, LayoutHelper.createFrame(90, 90, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 15, 0, 0));
+        avatarView.setRoundRadius(dp(96));
+        avatarContainer.addView(avatarView, LayoutHelper.createFrame(96, 96, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 12, 0, 0));
 
         avatarProgressView = new RadialProgressView(context) {
             private Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -454,7 +461,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         avatarProgressView.setSize(AndroidUtilities.dp(26));
         avatarProgressView.setProgressColor(0xffffffff);
         avatarProgressView.setNoProgress(false);
-        avatarContainer.addView(avatarProgressView, LayoutHelper.createFrame(90, 90, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 15, 0, 0));
+        avatarContainer.addView(avatarProgressView, LayoutHelper.createFrame(96, 96, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 12, 0, 0));
         showAvatarProgress(false, false);
 
         cameraButton = new FrameLayout(context);
@@ -467,7 +474,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         cameraImageView.setImageResource(R.drawable.filled_premium_camera);
         cameraBackground.addView(cameraImageView, LayoutHelper.createFrame(22, 22, Gravity.CENTER));
         cameraButton.addView(cameraBackground, LayoutHelper.createFrame(30, 30));
-        avatarContainer.addView(cameraButton, LayoutHelper.createFrame(34, 34, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 32, 75, 0, 0));
+        avatarContainer.addView(cameraButton, LayoutHelper.createFrame(34, 34, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 36, 82, 0, 0));
         ScaleStateListAnimator.apply(cameraButton);
 
         titleView = new TextView(context);
@@ -476,14 +483,32 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         titleView.setGravity(Gravity.CENTER);
         titleView.setSingleLine();
         titleView.setEllipsize(TextUtils.TruncateAt.END);
-        topView.addView(titleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 16, 138.333f - 12, 16, 0));
+        topView.addView(titleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 16, 150, 16, 0));
 
         subtitleView = new TextView(context);
         subtitleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13.2f);
         subtitleView.setGravity(Gravity.CENTER);
         subtitleView.setSingleLine();
         subtitleView.setEllipsize(TextUtils.TruncateAt.END);
-        topView.addView(subtitleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 168 - 12, 0, 0));
+        topView.addView(subtitleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 12, 180, 12, 0));
+
+        editProfileView = new TextView(context);
+        editProfileView.setText("Edit Profile");
+        editProfileView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+        editProfileView.setTypeface(AndroidUtilities.bold());
+        editProfileView.setTextColor(0xffffffff);
+        editProfileView.setGravity(Gravity.CENTER);
+        editProfileView.setPadding(dp(24), 0, dp(24), 0);
+        editProfileView.setBackground(Theme.createSelectorDrawable(0x553B82F6, Theme.RIPPLE_MASK_ROUNDRECT_8DP));
+        GradientDrawable editProfileBackground = new GradientDrawable();
+        editProfileBackground.setColor(0xFF3478F6);
+        editProfileBackground.setCornerRadius(dp(18));
+        editProfileView.setBackground(new android.graphics.drawable.RippleDrawable(
+            android.content.res.ColorStateList.valueOf(0x553B82F6), editProfileBackground, null
+        ));
+        editProfileView.setOnClickListener(v -> presentSettingFragment(new UserInfoActivity()));
+        ScaleStateListAnimator.apply(editProfileView);
+        topView.addView(editProfileView, LayoutHelper.createFrame(136, 38, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 210, 0, 0));
 
         versionView = new TextView(context);
         versionView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
@@ -648,7 +673,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             return;
         }
 
-        items.add(UItem.asCustomShadow(topView, 200 - 12));
+        items.add(UItem.asCustomShadow(topView, 260 - 12));
 
         accountNumbers.clear();
         for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
