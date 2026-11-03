@@ -209,7 +209,11 @@ public class TGramFeedActivity extends BaseFragment implements NotificationCente
                     changed = true;
                 }
             }
-            if (changed) adapter.notifyItemChanged(i);
+            if (changed) {
+                View pv = findPostView(it.post);
+                if (pv instanceof PostView) ((PostView) pv).bind(it.post);
+                else adapter.notifyItemChanged(i);
+            }
         }
     }
 
@@ -262,17 +266,29 @@ public class TGramFeedActivity extends BaseFragment implements NotificationCente
             openPost(post);
             return;
         }
-        ReactionsLayoutInBubble.VisibleReaction clicked = ReactionsLayoutInBubble.VisibleReaction.fromTL(reaction.reaction);
-        ArrayList<ReactionsLayoutInBubble.VisibleReaction> list = new ArrayList<>();
-        if (mo.messageOwner.reactions != null) {
-            for (TLRPC.ReactionCount rc : mo.messageOwner.reactions.results) {
-                if (rc.chosen && rc.reaction != null && !clicked.isSame(rc.reaction) && !(rc.reaction instanceof TLRPC.TL_reactionPaid)) {
-                    list.add(ReactionsLayoutInBubble.VisibleReaction.fromTL(rc.reaction));
-                }
-            }
+        applyReaction(mo, ReactionsLayoutInBubble.VisibleReaction.fromTL(reaction.reaction), post);
+    }
+
+    /** Same steps as a chat: change the message locally first (so the chips never disappear), then tell the server. */
+    private void applyReaction(final MessageObject mo, ReactionsLayoutInBubble.VisibleReaction vr, final Post post) {
+        if (mo == null || vr == null || post == null) return;
+        if (vr.isStar) {
+            openPost(post);
+            return;
         }
-        if (!reaction.chosen) list.add(clicked);
-        SendMessagesHelper.getInstance(currentAccount).sendReaction(mo, list, reaction.chosen ? null : clicked, false, false, this, null);
+        final boolean added = mo.selectReaction(vr, false, false);
+        ArrayList<ReactionsLayoutInBubble.VisibleReaction> chosen = new ArrayList<>(mo.getChoosenReactions());
+        refreshPost(post);
+        SendMessagesHelper.getInstance(currentAccount).sendReaction(mo, chosen, added ? vr : null, false, false, this, () -> refreshPost(post));
+    }
+
+    private void refreshPost(Post post) {
+        for (MessageObject m : post.messages) {
+            m.forceUpdate = true;
+            m.reactionsChanged = true;
+        }
+        View v = findPostView(post);
+        if (v instanceof PostView) ((PostView) v).bind(post);
     }
 
     @Override
@@ -297,6 +313,7 @@ public class TGramFeedActivity extends BaseFragment implements NotificationCente
         listView = new RecyclerListView(context);
         layoutManager = new LinearLayoutManager(context);
         listView.setLayoutManager(layoutManager);
+        listView.setItemAnimator(null); // no fade when a post is refreshed (reactions, quotes)
         adapter = new Adapter();
         listView.setAdapter(adapter);
         listView.setClipToPadding(false);
@@ -1084,6 +1101,13 @@ public class TGramFeedActivity extends BaseFragment implements NotificationCente
         return out;
     }
 
+    /** Tap: same as in a channel, the menu with reactions opens. While posts are selected a tap adds / removes the post. */
+    private void onPostTap(Post p) {
+        if (p == null) return;
+        if (!selected.isEmpty()) toggleSelect(p);
+        else showPostActions(p);
+    }
+
     private void toggleSelect(Post p) {
         if (p == null) return;
         String k = keyOf(p);
@@ -1156,23 +1180,7 @@ public class TGramFeedActivity extends BaseFragment implements NotificationCente
     }
 
     private void reactFromMenu(MessageObject mo, ReactionsLayoutInBubble.VisibleReaction vr, Post post) {
-        if (mo == null || vr == null) return;
-        if (vr.isStar) {
-            openPost(post);
-            return;
-        }
-        boolean chosen = false;
-        ArrayList<ReactionsLayoutInBubble.VisibleReaction> list = new ArrayList<>();
-        if (mo.messageOwner.reactions != null) {
-            for (TLRPC.ReactionCount rc : mo.messageOwner.reactions.results) {
-                if (rc.chosen && rc.reaction != null && !(rc.reaction instanceof TLRPC.TL_reactionPaid)) {
-                    if (vr.isSame(rc.reaction)) chosen = true;
-                    else list.add(ReactionsLayoutInBubble.VisibleReaction.fromTL(rc.reaction));
-                }
-            }
-        }
-        if (!chosen) list.add(vr);
-        SendMessagesHelper.getInstance(currentAccount).sendReaction(mo, list, chosen ? null : vr, false, false, this, null);
+        applyReaction(mo, vr, post);
     }
 
     private void addMenuRow(LinearLayout card, int icon, String text, boolean top, boolean bottom, final Runnable action) {
@@ -1479,6 +1487,7 @@ public class TGramFeedActivity extends BaseFragment implements NotificationCente
         private final TextView dateView;
         private final LinearLayout cellsBox;
         private final RecyclerView albumList;
+        private final TextView albumCaption;
         private final ArrayList<MessageObject> albumMessages = new ArrayList<>();
         private MessageObject.GroupedMessages albumGroup;
         private RecyclerView.Adapter<RecyclerView.ViewHolder> albumAdapter;
@@ -1625,8 +1634,21 @@ public class TGramFeedActivity extends BaseFragment implements NotificationCente
             albumList.setAdapter(albumAdapter);
             addView(albumList, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
 
+            // if the album cells did not draw the caption themselves, it is shown here under the photos
+            albumCaption = new TextView(context);
+            albumCaption.setTextSize(16);
+            albumCaption.setTextColor(Theme.getColor(Theme.key_chat_messageTextIn));
+            albumCaption.setLinkTextColor(Theme.getColor(Theme.key_chat_messageLinkIn));
+            albumCaption.setPadding(dp(12), dp(8), dp(12), dp(8));
+            albumCaption.setBackground(Theme.createRoundRectDrawable(dp(12), Theme.getColor(Theme.key_chat_inBubble)));
+            albumCaption.setMovementMethod(android.text.method.LinkMovementMethod.getInstance());
+            albumCaption.setVisibility(GONE);
+            LayoutParams acp = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
+            acp.setMargins(dp(8), dp(2), dp(8), dp(4));
+            addView(albumCaption, acp);
+
             // tap a post to select it (Copy / Copy link / Forward in the top bar); hold it for the full menu with reactions
-            setOnClickListener(v -> toggleSelect(current));
+            setOnClickListener(v -> onPostTap(current));
             setOnLongClickListener(v -> {
                 showPostActions(current);
                 return true;
@@ -1719,7 +1741,7 @@ public class TGramFeedActivity extends BaseFragment implements NotificationCente
                 }
 
                 public void didPressOther(ChatMessageCell cell, float otherX, float otherY) {
-                    toggleSelect(current);
+                    onPostTap(current);
                 }
 
                 public boolean hasSelectedMessages() {
@@ -1752,7 +1774,7 @@ public class TGramFeedActivity extends BaseFragment implements NotificationCente
                 }
 
                 public void didPressTime(ChatMessageCell cell) {
-                    toggleSelect(current);
+                    onPostTap(current);
                 }
 
                 public boolean needPlayMessage(ChatMessageCell cell, MessageObject messageObject, boolean muted) {
@@ -1790,13 +1812,29 @@ public class TGramFeedActivity extends BaseFragment implements NotificationCente
             final boolean album = post.group != null && n > 1;
             albumList.setVisibility(album ? View.VISIBLE : View.GONE);
             cellsBox.setVisibility(album ? View.GONE : View.VISIBLE);
+            if (!album) albumCaption.setVisibility(View.GONE);
             if (album) {
                 albumMessages.clear();
                 albumMessages.addAll(post.messages);
                 // same order as the chat list: newest id first (the grid is reversed like in a chat)
                 Collections.sort(albumMessages, (a, b) -> b.getId() - a.getId());
                 albumGroup = post.group;
+                albumCaption.setVisibility(GONE);
                 albumAdapter.notifyDataSetChanged();
+                final Post forPost = post;
+                albumList.postDelayed(() -> {
+                    if (current != forPost || forPost.group == null) return;
+                    boolean drawn = false;
+                    for (int ci = 0; ci < albumList.getChildCount(); ci++) {
+                        View c = albumList.getChildAt(ci);
+                        if (c instanceof ChatMessageCell && ((ChatMessageCell) c).hasCaptionLayout()) drawn = true;
+                    }
+                    MessageObject cm = forPost.group.findCaptionMessageObject();
+                    if (!drawn && cm != null && !TextUtils.isEmpty(cm.caption)) {
+                        albumCaption.setText(cm.caption);
+                        albumCaption.setVisibility(VISIBLE);
+                    }
+                }, 450);
                 for (ChatMessageCell c : cells) c.setVisibility(View.GONE);
                 return;
             }
