@@ -13,6 +13,11 @@ import java.util.ArrayList;
 /** Appearance: chat list title, centered titles, popup glass. */
 public class TGramAppearanceActivity extends UniversalFragment {
 
+    @Override
+    protected boolean isTGramPage() {
+        return true;
+    }
+
     private static final int ID_TITLE = 1, ID_CENTER = 2, ID_BLUR = 3, ID_IOS = 4, ID_FEEDTAB = 5;
     private static final String[] MODES = {"App name", "Account first name"};
 
