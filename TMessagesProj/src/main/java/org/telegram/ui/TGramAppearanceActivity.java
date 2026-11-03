@@ -1,6 +1,7 @@
 package org.telegram.ui;
 
 import android.view.View;
+import android.widget.EditText;
 
 import org.telegram.messenger.TrustedConfig;
 import org.telegram.ui.ActionBar.AlertDialog;
@@ -19,7 +20,7 @@ public class TGramAppearanceActivity extends UniversalFragment {
     }
 
     private static final int ID_TITLE = 1, ID_CENTER = 2, ID_BLUR = 3, ID_IOS = 4, ID_FEEDTAB = 5;
-    private static final String[] MODES = {"App name", "Account first name"};
+    private static final String[] MODES = {"App name", "Account first name", "Custom text"};
 
     @Override
     protected boolean useLargeTitle() {
@@ -38,7 +39,7 @@ public class TGramAppearanceActivity extends UniversalFragment {
         items.add(UItem.asButtonCheck(ID_FEEDTAB, "Feed in Bottom Bar", "Adds a Feed button to the floating tab bar. Restart to apply.").setChecked(TrustedConfig.isFeedTab()));
         items.add(UItem.asShadow(null));
         items.add(UItem.asHeader("Chat List"));
-        items.add(UItem.asButton(ID_TITLE, "Title Text", MODES[Math.max(0, Math.min(1, TrustedConfig.getTitleMode()))]));
+        items.add(UItem.asButton(ID_TITLE, "Chat List Title", MODES[Math.max(0, Math.min(2, TrustedConfig.getTitleMode()))]));
         items.add(UItem.asButtonCheck(ID_CENTER, "Center Title", "Show titles in the middle of the top bar on every screen").setChecked(TrustedConfig.isTitleCentered()));
         items.add(UItem.asShadow("The chat list title changes as soon as you go back."));
         items.add(UItem.asHeader("Popups"));
@@ -65,9 +66,31 @@ public class TGramAppearanceActivity extends UniversalFragment {
             AlertDialog.Builder b = new AlertDialog.Builder(getParentActivity());
             b.setTitle("Title Text");
             b.setItems(MODES, (d, which) -> {
-                TrustedConfig.setTitleMode(which);
-                listView.adapter.update(true);
-                showRestartRequired();
+                if (which == 2) {
+                    EditText input = new EditText(getParentActivity());
+                    input.setSingleLine(true);
+                    input.setText(TrustedConfig.getTitleText());
+                    input.setSelection(input.length());
+                    input.setHint("Enter chat list title");
+                    AlertDialog.Builder titleDialog = new AlertDialog.Builder(getParentActivity());
+                    titleDialog.setTitle("Custom chat list title");
+                    titleDialog.setView(input);
+                    titleDialog.setPositiveButton("Save", (dialog, result) -> {
+                        String value = input.getText() == null ? "" : input.getText().toString().trim();
+                        if (!value.isEmpty()) {
+                            TrustedConfig.setTitleText(value);
+                            TrustedConfig.setTitleMode(2);
+                            listView.adapter.update(true);
+                            showRestartRequired();
+                        }
+                    });
+                    titleDialog.setNegativeButton("Cancel", null);
+                    showDialog(titleDialog.create());
+                } else {
+                    TrustedConfig.setTitleMode(which);
+                    listView.adapter.update(true);
+                    showRestartRequired();
+                }
             });
             b.setNegativeButton("Cancel", null);
             showDialog(b.create());
