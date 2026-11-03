@@ -440,7 +440,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         avatarDrawable = new AvatarDrawable();
         avatarView = new BackupImageView(context);
         avatarView.setRoundRadius(dp(96));
-        avatarContainer.addView(avatarView, LayoutHelper.createFrame(96, 96, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 12, 0, 0));
+        avatarContainer.addView(avatarView, LayoutHelper.createFrame(80, 80, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 10, 0, 0));
 
         avatarProgressView = new RadialProgressView(context) {
             private Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -461,7 +461,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         avatarProgressView.setSize(AndroidUtilities.dp(26));
         avatarProgressView.setProgressColor(0xffffffff);
         avatarProgressView.setNoProgress(false);
-        avatarContainer.addView(avatarProgressView, LayoutHelper.createFrame(96, 96, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 12, 0, 0));
+        avatarContainer.addView(avatarProgressView, LayoutHelper.createFrame(80, 80, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 10, 0, 0));
         showAvatarProgress(false, false);
 
         cameraButton = new FrameLayout(context);
@@ -474,23 +474,23 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         cameraImageView.setImageResource(R.drawable.filled_premium_camera);
         cameraBackground.addView(cameraImageView, LayoutHelper.createFrame(22, 22, Gravity.CENTER));
         cameraButton.addView(cameraBackground, LayoutHelper.createFrame(30, 30));
-        avatarContainer.addView(cameraButton, LayoutHelper.createFrame(34, 34, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 36, 82, 0, 0));
+        avatarContainer.addView(cameraButton, LayoutHelper.createFrame(30, 30, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 29, 61, 0, 0));
         ScaleStateListAnimator.apply(cameraButton);
 
         titleView = new TextView(context);
-        titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 22);
+        titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
         titleView.setTypeface(AndroidUtilities.bold());
         titleView.setGravity(Gravity.CENTER);
         titleView.setSingleLine();
         titleView.setEllipsize(TextUtils.TruncateAt.END);
-        topView.addView(titleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 16, 150, 16, 0));
+        topView.addView(titleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 24, 105, 24, 0));
 
         subtitleView = new TextView(context);
-        subtitleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13.2f);
+        subtitleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12.2f);
         subtitleView.setGravity(Gravity.CENTER);
-        subtitleView.setSingleLine();
+        subtitleView.setMaxLines(2);
         subtitleView.setEllipsize(TextUtils.TruncateAt.END);
-        topView.addView(subtitleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 12, 180, 12, 0));
+        topView.addView(subtitleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 20, 132, 20, 0));
 
         editProfileView = new TextView(context);
         editProfileView.setText("Edit Profile");
@@ -507,7 +507,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         ));
         editProfileView.setOnClickListener(v -> presentSettingFragment(new UserInfoActivity()));
         ScaleStateListAnimator.apply(editProfileView);
-        topView.addView(editProfileView, LayoutHelper.createFrame(136, 38, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 210, 0, 0));
+        topView.addView(editProfileView, LayoutHelper.createFrame(128, 34, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 169, 0, 0));
 
         versionView = new TextView(context);
         versionView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
@@ -672,7 +672,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             return;
         }
 
-        items.add(UItem.asCustomShadow(topView, 280 - 12));
+        items.add(UItem.asCustomShadow(topView, 224 - 12));
 
         accountNumbers.clear();
         for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
@@ -746,7 +746,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             items.add(UItem.asShadow(null));
         }
 
-        items.add(SettingCell.Factory.of(90, 0xFF2F6BFF, 0xFF1B3FA8, R.drawable.trusted_menu_icon, "TGram Settings", "Ghost mode, feed, appearance and more"));
+        items.add(SettingCell.Factory.of(90, 0xFF2F6BFF, 0xFF1B3FA8, R.drawable.trusted_menu_icon, "TGram Settings", "Ghost mode, appearance and more"));
         items.add(UItem.asShadow(null));
         items.add(UItem.asHeader("Preferences"));
         items.add(SettingCell.Factory.of(1, IconBackgroundColors.BLUE.top, IconBackgroundColors.BLUE.bottom, R.drawable.settings_account, getString(R.string.SettingsAccount), getString(R.string.SettingsAccountInfo)));
