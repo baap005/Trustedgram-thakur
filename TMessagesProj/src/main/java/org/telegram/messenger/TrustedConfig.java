@@ -56,7 +56,7 @@ public class TrustedConfig {
         prefs().edit().putString("title_text", text == null ? "" : text.trim()).apply();
     }
 
-    /** 0 = app name, 1 = first name of the account. */
+    /** 0 = app name, 1 = first name of the account, 2 = custom text. */
     public static int getTitleMode() {
         return prefs().getInt("title_mode", 0);
     }
@@ -104,6 +104,8 @@ public class TrustedConfig {
         if (mode == 1) {
             TLRPC.User u = UserConfig.getInstance(account).getCurrentUser();
             if (u != null && u.first_name != null && !u.first_name.trim().isEmpty()) return u.first_name.trim();
+        } else if (mode == 2) {
+            return getTitleText();
         }
         return "TrustedGram";
     }
