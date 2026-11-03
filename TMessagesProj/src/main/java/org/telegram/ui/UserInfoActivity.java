@@ -84,6 +84,11 @@ public class UserInfoActivity extends UniversalFragment implements NotificationC
     private ArrayList<TL_account.TL_connectedBot> bots = new ArrayList<>();
 
     @Override
+    protected boolean useLargeTitle() {
+        return true;
+    }
+
+    @Override
     protected CharSequence getTitle() {
         return getString(R.string.EditAccountInfo2);
     }
@@ -256,7 +261,7 @@ public class UserInfoActivity extends UniversalFragment implements NotificationC
 
         super.createView(context);
         this.listView = super.listView;
-        listView.setSections();
+        listView.setSections(dp(14), dp(22), false);
         listView.setClipToPadding(false);
         actionBar.setAdaptiveBackground(listView);
         if (parentLayout != null && parentLayout.isRightLayout()) {
