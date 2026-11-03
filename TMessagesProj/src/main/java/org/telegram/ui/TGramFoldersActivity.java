@@ -33,6 +33,11 @@ public class TGramFoldersActivity extends UniversalFragment {
     }
 
     @Override
+    protected boolean useLargeTitle() {
+        return true;
+    }
+
+    @Override
     protected CharSequence getTitle() {
         return "Chat Folders";
     }
