@@ -19,7 +19,7 @@ public class TGramAppearanceActivity extends UniversalFragment {
         return true;
     }
 
-    private static final int ID_TITLE = 1, ID_CENTER = 2, ID_BLUR = 3, ID_IOS = 4, ID_FEEDTAB = 5;
+    private static final int ID_TITLE = 1, ID_CENTER = 2, ID_BLUR = 3, ID_IOS = 4, ID_FEEDTAB = 5, ID_LARGE = 6;
     private static final String[] MODES = {"App name", "Account first name", "Custom text"};
 
     @Override
@@ -42,6 +42,9 @@ public class TGramAppearanceActivity extends UniversalFragment {
         items.add(UItem.asButton(ID_TITLE, "Chat List Title", MODES[Math.max(0, Math.min(2, TrustedConfig.getTitleMode()))]));
         items.add(UItem.asButtonCheck(ID_CENTER, "Center Title", "Show titles in the middle of the top bar on every screen").setChecked(TrustedConfig.isTitleCentered()));
         items.add(UItem.asShadow("The chat list title changes as soon as you go back."));
+        items.add(UItem.asHeader("Navigation"));
+        items.add(UItem.asButtonCheck(ID_LARGE, "Large Titles", "Use the iOS-style large, collapsing title on TrustedGram settings pages. Reopen a page to apply.").setChecked(TrustedConfig.isLargeTitles()));
+        items.add(UItem.asShadow(null));
         items.add(UItem.asHeader("Popups"));
         items.add(UItem.asButtonCheck(ID_BLUR, "Glass Blur", "Frosted background behind TrustedGram popups (Android 12+)").setChecked(TrustedConfig.isGlassBlur()));
         items.add(UItem.asShadow(null));
@@ -61,6 +64,8 @@ public class TGramAppearanceActivity extends UniversalFragment {
         } else if (item.id == ID_CENTER) {
             TrustedConfig.setTitleCentered(!TrustedConfig.isTitleCentered());
             if (parentLayout != null) TrustedConfig.centerTitles(parentLayout);
+        } else if (item.id == ID_LARGE) {
+            TrustedConfig.setLargeTitles(!TrustedConfig.isLargeTitles());
         } else if (item.id == ID_TITLE) {
             if (getParentActivity() == null) return;
             AlertDialog.Builder b = new AlertDialog.Builder(getParentActivity());
