@@ -4250,7 +4250,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             }
         };
         listView.setSections();
-        listView.setRoundedSectionBackgrounds(true);
         listView.applyPaddingToSections = false;
         listView.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundGray));
         listView.setVerticalScrollBarEnabled(false);
