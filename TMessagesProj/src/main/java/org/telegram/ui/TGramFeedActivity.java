@@ -139,6 +139,7 @@ public class TGramFeedActivity extends BaseFragment implements NotificationCente
     private ImageView selLink;
     private final java.util.LinkedHashSet<String> selected = new java.util.LinkedHashSet<>();
     private FrameLayout menuOverlay;
+    private boolean suppressNextPostClick;
     private FrameLayout pinnedBar;
     private TextView pinnedTitle;
     private TextView pinnedText;
@@ -1663,7 +1664,13 @@ public class TGramFeedActivity extends BaseFragment implements NotificationCente
 
             // Feed posts use the channel-style action popup on a normal tap.
             // Media, links, reactions and author controls keep their dedicated handlers.
-            setOnClickListener(v -> showPostActions(current));
+            setOnClickListener(v -> {
+                if (suppressNextPostClick) {
+                    suppressNextPostClick = false;
+                    return;
+                }
+                showPostActions(current);
+            });
             setOnLongClickListener(v -> {
                 showPostActions(current);
                 return true;
@@ -1752,7 +1759,15 @@ public class TGramFeedActivity extends BaseFragment implements NotificationCente
                 }
 
                 public void didPressReaction(ChatMessageCell cell, TLRPC.ReactionCount reaction, boolean longpress, float x, float y) {
-                    if (longpress) showPostActions(current); else toggleReaction(cell.getPrimaryMessageObject(), reaction, current);
+                    if (longpress) {
+                        showPostActions(current);
+                    } else {
+                        // The reaction chip owns this tap; do not let it bubble into the
+                        // PostView click handler and open the post action popup as well.
+                        suppressNextPostClick = true;
+                        AndroidUtilities.runOnUIThread(() -> suppressNextPostClick = false, 300);
+                        toggleReaction(cell.getPrimaryMessageObject(), reaction, current);
+                    }
                 }
 
                 public void didPressOther(ChatMessageCell cell, float otherX, float otherY) {
