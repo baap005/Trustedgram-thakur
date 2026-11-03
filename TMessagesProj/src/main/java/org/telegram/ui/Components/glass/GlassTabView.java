@@ -155,10 +155,10 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
         if (selectedFactor > 0 && !skipDrawSelector) {
             final float alpha = AnimatorUtils.DECELERATE_INTERPOLATOR.getInterpolation(selectedFactor);
 
-            paintCounterBackground.setColor(Theme.multAlpha(colorSelected, 0.12f * alpha));
+            paintCounterBackground.setColor(Theme.multAlpha(colorSelected, 0.17f * alpha));
             paintTabSelectorStroke.setStyle(Paint.Style.STROKE);
             paintTabSelectorStroke.setStrokeWidth(dp(1));
-            paintTabSelectorStroke.setColor(Theme.multAlpha(Color.WHITE, 0.10f * alpha));
+            paintTabSelectorStroke.setColor(Theme.multAlpha(Color.WHITE, 0.18f * alpha));
             tmpRectF.set(0, 0, viewWidth, getHeight());
             final float r = Math.min(tmpRectF.width(), tmpRectF.height()) / 2f;
             final float s = lerp(0.6f, 1, selectedFactor) * MathUtils.clamp(attachScale, 0, 1);
@@ -166,6 +166,14 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
             canvas.scale(s, s, tmpRectF.centerX(), tmpRectF.centerY());
             canvas.drawRoundRect(tmpRectF, r, r, paintCounterBackground);
             canvas.drawRoundRect(tmpRectF, r, r, paintTabSelectorStroke);
+
+            // A restrained upper highlight gives the selected capsule a layered glass edge.
+            canvas.save();
+            canvas.clipRect(tmpRectF.left, tmpRectF.top, tmpRectF.right, tmpRectF.centerY());
+            tmpRectF.inset(dp(1), dp(1));
+            paintCounterBackground.setColor(Theme.multAlpha(Color.WHITE, 0.075f * alpha));
+            canvas.drawRoundRect(tmpRectF, r, r, paintCounterBackground);
+            canvas.restore();
             canvas.restore();
         }
 
