@@ -39,7 +39,9 @@ public class TGramAppearanceActivity extends UniversalFragment {
         items.add(UItem.asButtonCheck(ID_FEEDTAB, "Feed in Bottom Bar", "Adds a Feed button to the floating tab bar. Restart to apply.").setChecked(TrustedConfig.isFeedTab()));
         items.add(UItem.asShadow(null));
         items.add(UItem.asHeader("Chat List"));
-        items.add(UItem.asButton(ID_TITLE, "Chat List Title", MODES[Math.max(0, Math.min(2, TrustedConfig.getTitleMode()))]));
+        int titleMode = Math.max(0, Math.min(2, TrustedConfig.getTitleMode()));
+        String titleValue = titleMode == 2 ? TrustedConfig.getTitleText() : MODES[titleMode];
+        items.add(UItem.asButton(ID_TITLE, "Chat List Title", titleValue));
         items.add(UItem.asButtonCheck(ID_CENTER, "Center Title", "Show titles in the middle of the top bar on every screen").setChecked(TrustedConfig.isTitleCentered()));
         items.add(UItem.asShadow("The chat list title changes as soon as you go back."));
         items.add(UItem.asHeader("Navigation"));
