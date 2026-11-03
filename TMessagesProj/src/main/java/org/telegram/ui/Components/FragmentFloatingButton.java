@@ -7,6 +7,7 @@ import static org.telegram.messenger.AndroidUtilities.lerp;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.view.Gravity;
 import android.view.View;
@@ -47,6 +48,7 @@ public class FragmentFloatingButton extends FrameLayout implements FactorAnimato
     private final Theme.ResourcesProvider resourcesProvider;
     private ArrayList<View> additionalContentViews;
     private final boolean isSubButton;
+    private final Paint mainButtonGlassEdgePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
     public FragmentFloatingButton(@NonNull Context context, Theme.ResourcesProvider resourcesProvider) {
         this(context, resourcesProvider, false);
@@ -57,6 +59,9 @@ public class FragmentFloatingButton extends FrameLayout implements FactorAnimato
 
         this.resourcesProvider = resourcesProvider;
         this.isSubButton = isSubButton;
+        mainButtonGlassEdgePaint.setStyle(Paint.Style.STROKE);
+        mainButtonGlassEdgePaint.setStrokeWidth(dp(0.9f));
+        mainButtonGlassEdgePaint.setColor(0x55FFFFFF);
 
         imageView = new RLottieImageView(context);
         imageView.setScaleType(ImageView.ScaleType.CENTER);
@@ -218,6 +223,11 @@ public class FragmentFloatingButton extends FrameLayout implements FactorAnimato
             iBlur3Background.draw(canvas);
         }
         super.draw(canvas);
+        if (!isSubButton && getAlpha() > 0.01f) {
+            mainButtonGlassEdgePaint.setAlpha((int) (0x55 * getAlpha()));
+            float inset = dp(0.9f);
+            canvas.drawOval(inset, inset, getWidth() - inset, getHeight() - inset, mainButtonGlassEdgePaint);
+        }
     }
 
     @Override
