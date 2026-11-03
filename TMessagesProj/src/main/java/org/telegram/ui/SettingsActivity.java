@@ -801,7 +801,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 }
                 layout.closeLastFragment(false);
             }
-            layout.presentFragment(new INavigationLayout.NavigationParams(fragment).setNoAnimation(true).forceRightLayout());
+            layout.presentFragment(new INavigationLayout.NavigationParams(fragment).setNoAnimation(false).forceRightLayout());
         } else {
             presentFragment(fragment);
         }
