@@ -26,6 +26,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.recyclerview.widget.GridLayoutManagerFixed;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -128,6 +129,10 @@ public class TGramFeedActivity extends BaseFragment implements NotificationCente
     private Adapter adapter;
     private TextView statusView;
     private TextView subtitleView;
+    private TextView floatingDate;
+    private final Runnable hideFloatingDate = () -> {
+        if (floatingDate != null) floatingDate.animate().alpha(0f).setDuration(220).start();
+    };
     private int loadGeneration;
     private int pending;
 
@@ -286,6 +291,7 @@ public class TGramFeedActivity extends BaseFragment implements NotificationCente
             @Override
             public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
                 updateDownButton(true);
+                if (dy != 0) updateFloatingDate();
                 if (dy < 0 && layoutManager.findFirstVisibleItemPosition() <= 4) {
                     loadOlder();
                 }
@@ -294,11 +300,30 @@ public class TGramFeedActivity extends BaseFragment implements NotificationCente
             @Override
             public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
                 if (newState == RecyclerView.SCROLL_STATE_IDLE) {
+                    if (floatingDate != null) {
+                        floatingDate.removeCallbacks(hideFloatingDate);
+                        floatingDate.postDelayed(hideFloatingDate, 1200);
+                    }
                     markSeenPosts();
                 }
             }
         });
         frame.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+
+        // the day of the post you are looking at, shown under the top bar while you scroll
+        floatingDate = new TextView(context);
+        floatingDate.setTextSize(13);
+        floatingDate.setTypeface(Typeface.DEFAULT_BOLD);
+        floatingDate.setTextColor(barText());
+        floatingDate.setPadding(dp(14), dp(6), dp(14), dp(6));
+        GradientDrawable fdg = new GradientDrawable();
+        fdg.setColor(barColor());
+        fdg.setCornerRadius(dp(16));
+        floatingDate.setBackground(fdg);
+        floatingDate.setAlpha(0f);
+        FrameLayout.LayoutParams fdl = LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL);
+        fdl.topMargin = AndroidUtilities.statusBarHeight + dp(60);
+        frame.addView(floatingDate, fdl);
 
         statusView = new TextView(context);
         statusView.setTextSize(15);
@@ -839,6 +864,23 @@ public class TGramFeedActivity extends BaseFragment implements NotificationCente
         return total;
     }
 
+    private void updateFloatingDate() {
+        if (floatingDate == null || items.isEmpty() || layoutManager == null) return;
+        int pos = layoutManager.findFirstVisibleItemPosition();
+        if (pos < 0 || pos >= items.size()) return;
+        int date = 0;
+        for (int i = pos; i >= 0 && date == 0; i--) {
+            Item it = items.get(i);
+            if (it.post != null) date = it.post.first().messageOwner.date;
+            else if (it.dateObject != null) date = it.dateObject.messageOwner.date;
+        }
+        if (date == 0) return;
+        floatingDate.setText(dateLabel(date));
+        floatingDate.removeCallbacks(hideFloatingDate);
+        floatingDate.animate().cancel();
+        floatingDate.setAlpha(1f);
+    }
+
     private void updateSubtitle() {
         if (subtitleView == null) return;
         String text = loadedChannels.size() + (loadedChannels.size() == 1 ? " channel" : " channels");
@@ -1070,6 +1112,10 @@ public class TGramFeedActivity extends BaseFragment implements NotificationCente
         private final TextView nameView;
         private final TextView dateView;
         private final LinearLayout cellsBox;
+        private final RecyclerView albumList;
+        private final ArrayList<MessageObject> albumMessages = new ArrayList<>();
+        private MessageObject.GroupedMessages albumGroup;
+        private RecyclerView.Adapter<RecyclerView.ViewHolder> albumAdapter;
         private final ArrayList<ChatMessageCell> cells = new ArrayList<>();
         private final ChatMessageCell.ChatMessageCellDelegate delegate;
         private Post current;
@@ -1109,6 +1155,92 @@ public class TGramFeedActivity extends BaseFragment implements NotificationCente
             cellsBox = new LinearLayout(context);
             cellsBox.setOrientation(VERTICAL);
             addView(cellsBox, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
+
+            // Albums are laid out exactly like in a Telegram chat: a 1000-column grid, every photo takes the share of
+            // the row given by its position, so photos sit side by side in one collage instead of one under another.
+            albumList = new RecyclerView(context);
+            albumList.setOverScrollMode(View.OVER_SCROLL_NEVER);
+            albumList.setItemAnimator(null);
+            albumList.setNestedScrollingEnabled(false);
+            albumList.setClipChildren(false);
+            GridLayoutManagerFixed albumManager = new GridLayoutManagerFixed(context, 1000, LinearLayoutManager.VERTICAL, true) {
+                @Override
+                public boolean canScrollVertically() {
+                    return false;
+                }
+            };
+            albumManager.setSpanSizeLookup(new GridLayoutManagerFixed.SpanSizeLookup() {
+                @Override
+                public int getSpanSize(int position) {
+                    if (albumGroup != null && position >= 0 && position < albumMessages.size()) {
+                        MessageObject.GroupedMessagePosition pos = albumGroup.getPosition(albumMessages.get(position));
+                        if (pos != null) return pos.spanSize;
+                    }
+                    return 1000;
+                }
+            });
+            albumList.setLayoutManager(albumManager);
+            albumList.addItemDecoration(new RecyclerView.ItemDecoration() {
+                @Override
+                public void getItemOffsets(android.graphics.Rect outRect, View view, RecyclerView parent, RecyclerView.State state) {
+                    outRect.bottom = 0;
+                    if (!(view instanceof ChatMessageCell)) return;
+                    ChatMessageCell cell = (ChatMessageCell) view;
+                    MessageObject.GroupedMessages group = cell.getCurrentMessagesGroup();
+                    if (group == null) return;
+                    MessageObject.GroupedMessagePosition position = cell.getCurrentPosition();
+                    if (position == null || position.siblingHeights == null) return;
+                    float maxHeight = Math.max(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) * 0.5f;
+                    int h = cell.getExtraInsetHeight();
+                    for (int a = 0; a < position.siblingHeights.length; a++) {
+                        h += (int) Math.ceil(maxHeight * position.siblingHeights[a]);
+                    }
+                    h += (position.maxY - position.minY) * Math.round(7 * AndroidUtilities.density);
+                    int count = group.posArray.size();
+                    for (int a = 0; a < count; a++) {
+                        MessageObject.GroupedMessagePosition pos = group.posArray.get(a);
+                        if (pos.minY != position.minY || pos.minX == position.minX && pos.maxX == position.maxX && pos.minY == position.minY && pos.maxY == position.maxY) {
+                            continue;
+                        }
+                        if (pos.minY == position.minY) {
+                            h -= (int) Math.ceil(maxHeight * pos.ph) - AndroidUtilities.dp(4);
+                            break;
+                        }
+                    }
+                    outRect.bottom = -h;
+                }
+            });
+            albumAdapter = new RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+                @Override
+                public int getItemCount() {
+                    return albumMessages.size();
+                }
+
+                @Override
+                public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+                    ChatMessageCell cell = new ChatMessageCell(parent.getContext(), currentAccount);
+                    cell.setDelegate(delegate);
+                    cell.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.WRAP_CONTENT));
+                    return new RecyclerListView.Holder(cell);
+                }
+
+                @Override
+                public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
+                    ChatMessageCell cell = (ChatMessageCell) holder.itemView;
+                    cell.isChat = false;
+                    cell.setFullyDraw(true);
+                    cell.setMessageObject(albumMessages.get(position), albumGroup, false, false, false);
+                }
+            };
+            albumList.setAdapter(albumAdapter);
+            addView(albumList, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
+
+            // tap or hold anywhere on a post (outside links, buttons, reactions) opens the post menu
+            setOnClickListener(v -> showPostActions(current));
+            setOnLongClickListener(v -> {
+                showPostActions(current);
+                return true;
+            });
 
             delegate = new ChatMessageCell.ChatMessageCellDelegate() {
                 @Override
@@ -1197,7 +1329,36 @@ public class TGramFeedActivity extends BaseFragment implements NotificationCente
                 }
 
                 public void didPressOther(ChatMessageCell cell, float otherX, float otherY) {
+                    showPostActions(current);
+                }
+
+                // "Show more" on a collapsed quote / long text and quote expand: re-measure the post
+                public void forceUpdate(ChatMessageCell cell, boolean anchorScroll) {
+                    MessageObject mo = cell.getPrimaryMessageObject();
+                    if (mo == null) return;
+                    mo.forceUpdate = true;
+                    if (current != null) bind(current);
+                    requestLayout();
+                }
+
+                public void forceUpdate(ChatMessageCell cell, boolean anchorScroll, boolean scrollByTop) {
+                    forceUpdate(cell, anchorScroll);
+                }
+
+                public void forceUpdateNoAnimation(ChatMessageCell cell, boolean anchorScroll) {
+                    forceUpdate(cell, anchorScroll);
+                }
+
+                public void didPressShowMore(ChatMessageCell cell) {
                     openPost(current);
+                }
+
+                public void didPressGroupImage(ChatMessageCell cell, org.telegram.messenger.ImageReceiver imageReceiver, TLRPC.MessageExtendedMedia media, float x, float y) {
+                    openPhotoViewer(cell);
+                }
+
+                public void didPressTime(ChatMessageCell cell) {
+                    showPostActions(current);
                 }
 
                 public boolean needPlayMessage(ChatMessageCell cell, MessageObject messageObject, boolean muted) {
@@ -1231,6 +1392,19 @@ public class TGramFeedActivity extends BaseFragment implements NotificationCente
             nameView.setText(post.chat.title);
             dateView.setText(LocaleController.getInstance().getFormatterDay().format(post.date * 1000L));
             int n = post.messages.size();
+            final boolean album = post.group != null && n > 1;
+            albumList.setVisibility(album ? View.VISIBLE : View.GONE);
+            cellsBox.setVisibility(album ? View.GONE : View.VISIBLE);
+            if (album) {
+                albumMessages.clear();
+                albumMessages.addAll(post.messages);
+                // same order as the chat list: newest id first (the grid is reversed like in a chat)
+                Collections.sort(albumMessages, (a, b) -> b.getId() - a.getId());
+                albumGroup = post.group;
+                albumAdapter.notifyDataSetChanged();
+                for (ChatMessageCell c : cells) c.setVisibility(View.GONE);
+                return;
+            }
             for (int i = 0; i < cells.size() || i < n; i++) {
                 if (i >= n) {
                     cells.get(i).setVisibility(View.GONE);

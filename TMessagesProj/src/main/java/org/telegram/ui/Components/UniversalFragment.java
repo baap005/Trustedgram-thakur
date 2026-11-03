@@ -68,8 +68,8 @@ public abstract class UniversalFragment extends BaseFragment {
             }
         };
         if (isTGramPage()) {
-            contentView.setBackground(createGlassBackdrop());
-            listView.setBubbleSections();
+            // same floating rounded tiles (inset cards on the gray page) as the native Telegram settings
+            listView.setSections();
         }
         contentView.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
@@ -82,7 +82,7 @@ public abstract class UniversalFragment extends BaseFragment {
 
     /** True for the TrustedGram settings pages (TGramXxxActivity), which use bubble style glass tiles. */
     protected boolean isTGramPage() {
-        return false; // TGram pages now use the same native tile cards as every other settings page
+        return getClass().getSimpleName().startsWith("TGram");
     }
 
     /** Soft gradient behind the glass tiles so the transparency is actually visible. */

@@ -68,4 +68,20 @@ public class TrustedFeed {
         }
         return total;
     }
+
+    // ---- pinned posts (kept on this phone, shown in the feed's pinned bar)
+
+    private static String pinKey(long chatId, int msgId) {
+        return chatId + "_" + msgId;
+    }
+
+    public static boolean isPinned(long chatId, int msgId) {
+        return prefs().getStringSet("feed_pins", new HashSet<>()).contains(pinKey(chatId, msgId));
+    }
+
+    public static void setPinned(long chatId, int msgId, boolean pinned) {
+        Set<String> set = new HashSet<>(prefs().getStringSet("feed_pins", new HashSet<>()));
+        if (pinned) set.add(pinKey(chatId, msgId)); else set.remove(pinKey(chatId, msgId));
+        prefs().edit().putStringSet("feed_pins", set).apply();
+    }
 }

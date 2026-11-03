@@ -635,7 +635,7 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
         }
 
         if (!hasOverlayText) {
-            titleView.setText(currentTitle, animated && !LocaleController.isRTL);
+            titleView.setText(getDisplayTitle(), animated && !LocaleController.isRTL);
         }
 
         animatorHasTitleText.setValue(!TextUtils.isEmpty(currentTitle) || hasOverlayText, animated);
@@ -944,7 +944,7 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
             telegramLogoView.setTranslationX(titleView.getTranslationX() + dp(1));
             telegramLogoView.setTranslationY(bottomY + dp(14 + FAKE_TOP_PADDING + 4.333f) + translationOffset /*titleView.getTranslationY() + dpf2(37.33f)*/);
 
-            emojiStatusView.setTranslationX(titleView.getTranslationX() - dpf2(3.33f) + telegramLogoView.getMeasuredWidth());
+            emojiStatusView.setTranslationX(titleView.getTranslationX() - dpf2(3.33f) + (int) Math.ceil(titleView.getDrawable().getCurrentWidth()) + dp(4));
             emojiStatusView.setTranslationY(bottomY + dp(14 - 11 + FAKE_TOP_PADDING + 4.333f) + translationOffset);
 
             subtitleOverlayContainer.setTranslationX(titleView.getTranslationX());
@@ -1169,7 +1169,20 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
     }
 
     private int getTextLogoColor() {
-        return getThemedColor(Theme.key_telegram_color_dialogsLogo);
+        return getTextColor();
+    }
+
+    /** True when the cell shows the app title (instead of the old Telegram wordmark image). */
+    private boolean isBrandShown() {
+        return type == TYPE_DIALOGS && !hasOverlayText && TextUtils.isEmpty(currentTitle);
+    }
+
+    /** The app title, same text and style as the normal chat list title. */
+    private CharSequence getDisplayTitle() {
+        if (isBrandShown()) {
+            return org.telegram.messenger.TrustedConfig.getChatListTitle(currentAccount);
+        }
+        return currentTitle;
     }
 
     private int getTextColor() {
@@ -1299,7 +1312,7 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
         } else {
             hasOverlayText = false;
             overlayTextId = 0;
-            titleView.setText(currentTitle, !LocaleController.isRTL);
+            titleView.setText(getDisplayTitle(), !LocaleController.isRTL);
         }
 
         animatorHasTitleText.setValue(hasOverlayText, true);
@@ -2209,8 +2222,10 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
         final float progress = MathUtils.clamp(Math.min(collapsedProgress, collapsedProgress2), 0, 1);
         final float titleVisibility = animatorHasTitleText.getFloatValue();
         final float logoVisibility = 1f - titleVisibility;
-        final float titleAlpha = titleVisibility * progress;
-        final float logoAlpha = logoVisibility * progress;
+        final boolean brand = type == TYPE_DIALOGS;
+        final float titleAlpha = (brand ? 1f : titleVisibility) * progress;
+        final float logoAlpha = brand ? 0f : logoVisibility * progress;
+        final float statusAlpha = brand ? (isBrandShown() ? progress : 0f) : logoAlpha;
 
         if (titleView != null) {
             titleView.setAlpha(titleAlpha);
@@ -2221,8 +2236,8 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
             telegramLogoView.setVisibility(logoAlpha > 0 ? VISIBLE : GONE);
         }
         if (emojiStatusView != null) {
-            emojiStatusView.setAlpha(logoAlpha);
-            emojiStatusView.setVisibility(logoAlpha > 0 ? VISIBLE : GONE);
+            emojiStatusView.setAlpha(statusAlpha);
+            emojiStatusView.setVisibility(statusAlpha > 0 ? VISIBLE : GONE);
         }
         if (subtitleOverlayContainer != null) {
             subtitleOverlayContainer.setAlpha(progress);
