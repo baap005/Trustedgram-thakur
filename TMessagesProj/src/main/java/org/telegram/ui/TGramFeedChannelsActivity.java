@@ -24,6 +24,11 @@ import java.util.ArrayList;
  */
 public class TGramFeedChannelsActivity extends UniversalFragment {
 
+    @Override
+    protected boolean isTGramPage() {
+        return true;
+    }
+
     private static final int ID_WIDE = 1, ID_UNREAD = 2, ID_ARCHIVE = 3, ID_TAB = 4;
     private static final int MENU_SEARCH = 10, MENU_MORE = 11, MENU_ALL = 12, MENU_NONE = 13;
     private static final int ID_BASE = 1000;
