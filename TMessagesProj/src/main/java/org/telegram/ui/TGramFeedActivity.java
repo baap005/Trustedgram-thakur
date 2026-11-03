@@ -634,7 +634,7 @@ public class TGramFeedActivity extends BaseFragment implements NotificationCente
         ArrayList<Post> channelPosts = new ArrayList<>();
         int minId = Integer.MAX_VALUE;
         for (TLRPC.Message m : res.messages) {
-            minId = Math.min(minId, m.id);
+            if (m.id > 0) minId = Math.min(minId, m.id);
             if (m instanceof TLRPC.TL_messageEmpty || m instanceof TLRPC.TL_messageService) continue;
             MessageObject mo = new MessageObject(account, m, users, chats, true, true);
             Post p = m.grouped_id != 0 ? albums.get(m.grouped_id) : null;
@@ -685,7 +685,7 @@ public class TGramFeedActivity extends BaseFragment implements NotificationCente
             }
 
             if (groupedId != 0) {
-                Collections.sort(target.messages, (a, b) -> a.getId() - b.getId());
+                Collections.sort(target.messages, (a, b) -> Integer.compare(a.getId(), b.getId()));
                 MessageObject.GroupedMessages g = new MessageObject.GroupedMessages();
                 g.groupId = groupedId;
                 g.messages.addAll(target.messages);
