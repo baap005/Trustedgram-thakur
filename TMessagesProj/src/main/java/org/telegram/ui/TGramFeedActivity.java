@@ -119,7 +119,7 @@ public class TGramFeedActivity extends BaseFragment implements NotificationCente
     private ChatActivity callbackProxy;
     private final HashMap<Long, Integer> oldestId = new HashMap<>();
     private final java.util.HashSet<Long> endReached = new java.util.HashSet<>();
-    private final java.util.HashSet<String> knownPosts = new java.util.HashSet<>();
+    private final HashMap<String, Post> knownPosts = new HashMap<>();
     private boolean loadingOlder;
     private FrameLayout downButton;
     private TextView downCounter;
@@ -628,9 +628,13 @@ public class TGramFeedActivity extends BaseFragment implements NotificationCente
         HashMap<Long, TLRPC.Chat> chats = new HashMap<>();
         for (TLRPC.Chat c : res.chats) chats.put(c.id, c);
 
+        // Group only within this response first, then merge by grouped_id with any
+        // fragment already loaded from the adjacent history page.
         HashMap<Long, Post> albums = new HashMap<>();
         ArrayList<Post> channelPosts = new ArrayList<>();
+        int minId = Integer.MAX_VALUE;
         for (TLRPC.Message m : res.messages) {
+            minId = Math.min(minId, m.id);
             if (m instanceof TLRPC.TL_messageEmpty || m instanceof TLRPC.TL_messageService) continue;
             MessageObject mo = new MessageObject(account, m, users, chats, true, true);
             Post p = m.grouped_id != 0 ? albums.get(m.grouped_id) : null;
@@ -643,40 +647,55 @@ public class TGramFeedActivity extends BaseFragment implements NotificationCente
             }
             p.messages.add(mo);
         }
-        // the oldest album of a full page may be cut in half: drop it instead of showing half an album
-        if (res.messages.size() >= PER_CHANNEL && !channelPosts.isEmpty()) {
-            Post oldest = channelPosts.get(channelPosts.size() - 1);
-            if (oldest.first().messageOwner.grouped_id != 0) channelPosts.remove(oldest);
-        }
-        // remember where this channel's next older page starts
+
+        // Use the oldest raw message id, not the oldest rendered post id. This keeps
+        // pagination moving past service messages and incomplete album fragments.
         if (res.messages.size() < PER_CHANNEL) {
             endReached.add(chat.id);
-        }
-        int minId = Integer.MAX_VALUE;
-        for (Post p : channelPosts) {
-            for (MessageObject m : p.messages) minId = Math.min(minId, m.getId());
-        }
-        if (minId == Integer.MAX_VALUE) {
-            for (TLRPC.Message m : res.messages) minId = Math.min(minId, m.id);
         }
         if (minId != Integer.MAX_VALUE) {
             Integer prev = oldestId.get(chat.id);
             oldestId.put(chat.id, prev == null ? minId : Math.min(prev, minId));
         }
-        for (Post p : channelPosts) {
-            if (p.messages.size() > 1) {
-                // album: oldest photo first, one shared layout
-                Collections.sort(p.messages, (a, b) -> a.getId() - b.getId());
-                MessageObject.GroupedMessages g = new MessageObject.GroupedMessages();
-                g.groupId = p.first().messageOwner.grouped_id;
-                g.messages.addAll(p.messages);
-                g.calculate();
-                p.group = g;
-                // an album shows the time of its newest part
-                p.date = p.messages.get(p.messages.size() - 1).messageOwner.date;
+
+        for (Post pagePost : channelPosts) {
+            if (pagePost.messages.isEmpty()) continue;
+            final long groupedId = pagePost.first().messageOwner.grouped_id;
+            final String key = groupedId != 0
+                    ? chat.id + ":g:" + groupedId
+                    : chat.id + ":m:" + pagePost.first().getId();
+
+            Post target = knownPosts.get(key);
+            if (target == null) {
+                target = pagePost;
+                knownPosts.put(key, target);
+                posts.add(target);
+            } else {
+                // The same album can straddle two getHistory pages. Merge its
+                // remaining items instead of dropping the boundary fragment.
+                java.util.HashSet<Integer> existingIds = new java.util.HashSet<>();
+                for (MessageObject existing : target.messages) {
+                    existingIds.add(existing.getId());
+                }
+                for (MessageObject incoming : pagePost.messages) {
+                    if (existingIds.add(incoming.getId())) {
+                        target.messages.add(incoming);
+                    }
+                }
             }
-            if (knownPosts.add(p.chat.id + ":" + p.first().getId())) {
-                posts.add(p);
+
+            if (groupedId != 0) {
+                Collections.sort(target.messages, (a, b) -> a.getId() - b.getId());
+                MessageObject.GroupedMessages g = new MessageObject.GroupedMessages();
+                g.groupId = groupedId;
+                g.messages.addAll(target.messages);
+                g.calculate();
+                target.group = g;
+                // The album's displayed timestamp belongs to its newest item.
+                target.date = target.messages.get(target.messages.size() - 1).messageOwner.date;
+            } else {
+                target.group = null;
+                target.date = target.first().messageOwner.date;
             }
         }
     }
