@@ -13811,6 +13811,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
         io.add(R.drawable.ghost, org.telegram.messenger.TrustedGhost.isActive() ? "Ghost mode: ON" : "Ghost mode: OFF", () -> org.telegram.messenger.TrustedGhost.setActive(!org.telegram.messenger.TrustedGhost.isActive()));
         io.add(R.drawable.trusted_menu_icon, "TGram Settings", () -> presentFragment(new TGramMainActivity()));
+        if (org.telegram.messenger.TrustedConfig.isUpdateAvailable()) {
+            io.add(R.drawable.msg_download, "Update available", () -> org.telegram.messenger.TrustedConfig.openUpdate(getParentActivity()));
+        }
         if (ApplicationLoader.applicationLoaderInstance != null) {
             ApplicationLoader.applicationLoaderInstance.addItemOptions(io);
         }

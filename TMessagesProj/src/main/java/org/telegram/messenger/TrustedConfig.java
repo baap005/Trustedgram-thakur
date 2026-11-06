@@ -1,6 +1,7 @@
 package org.telegram.messenger;
 
 import android.app.Activity;
+import android.widget.Toast;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -30,12 +31,11 @@ public class TrustedConfig {
      * Build number of THIS build. Raise it by 1 for every release and put the same number in the
      * admin panel (App update > Latest version code). It is shown in TGram Settings.
      */
-    public static final int VERSION_CODE = 3;
-    public static final String VERSION_NAME = "1.3";
+    public static final int VERSION_CODE = 4;
+    public static final String VERSION_NAME = "1.4";
 
     private static long lastFetch;
     private static Dialog shownDialog;
-    private static int updateShownFor;
 
     public static class Item {
         public String key, title, desc;
@@ -238,10 +238,73 @@ public class TrustedConfig {
         });
     }
 
-    // ------------------------------------------------------------------ update + announcement popups
+    // ------------------------------------------------------------------ updates
+
+    /**
+     * What the admin panel published. update_mode:
+     *   "button" - no popup at all, an "Update available" button appears in the app (default)
+     *   "popup"  - same, plus one popup per new version (not repeated at every start)
+     *   "force"  - builds older than min_version_code (or older than latest when it is 0) must update, others get "popup"
+     * Older rows without update_mode still work: force_update -> force, update_popup_enabled -> popup, else button.
+     */
+    public static class UpdateInfo {
+        public int latest;
+        public int min;
+        public String name = "";
+        public String url = "";
+        public String changelog = "";
+        public String sha256 = "";
+        public long size;
+        public String mode = "button";
+        /** a newer build exists */
+        public boolean available;
+        /** this build is not allowed to run any more */
+        public boolean blocked;
+    }
+
+    public static UpdateInfo getUpdateInfo() {
+        UpdateInfo u = new UpdateInfo();
+        try {
+            String raw = prefs().getString("config_row", null);
+            if (raw == null) return u;
+            JSONObject row = new JSONObject(raw);
+            u.latest = row.optInt("latest_version_code", 0);
+            u.min = row.optInt("min_version_code", 0);
+            u.name = row.optString("latest_version_name", "");
+            u.url = row.optString("apk_url", "");
+            u.changelog = row.optString("changelog", "");
+            u.sha256 = row.optString("apk_sha256", "");
+            u.size = row.optLong("apk_size", 0);
+            String mode = row.optString("update_mode", "");
+            if (mode.isEmpty()) {
+                mode = row.optBoolean("force_update", false) ? "force" : row.optBoolean("update_popup_enabled", false) ? "popup" : "button";
+            }
+            u.mode = mode;
+            u.available = u.latest > VERSION_CODE && u.url.startsWith("https://");
+            int minNeeded = u.min > 0 ? u.min : ("force".equals(mode) ? u.latest : 0);
+            u.blocked = u.available && minNeeded > VERSION_CODE;
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        return u;
+    }
+
+    public static boolean isUpdateAvailable() {
+        return getUpdateInfo().available;
+    }
+
+    /** Opens the in-app update screen (download, then install). */
+    public static void openUpdate(Activity activity) {
+        UpdateInfo u = getUpdateInfo();
+        if (activity == null || activity.isFinishing() || !u.available) return;
+        if (shownDialog != null && shownDialog.isShowing()) return;
+        shownDialog = org.telegram.ui.TrustedUpdateDialog.show(activity, u, u.blocked);
+    }
 
     /** Call from LaunchActivity.onResume. */
     public static void check(Activity activity) {
+        TrustedUpdater.cleanup();
+        TrustedUpdater.onResume(activity);
         showPopups(activity);
         if (System.currentTimeMillis() - lastFetch > 5 * 60 * 1000L) {
             lastFetch = System.currentTimeMillis();
@@ -249,11 +312,14 @@ public class TrustedConfig {
         }
     }
 
-    /** Used by "Check for updates": forgets earlier "Later" choices and refreshes right away. */
-    public static void checkNow(Activity activity) {
-        updateShownFor = 0;
+    /** "Check for updates": refreshes right away and shows the update screen, or says that you are up to date. */
+    public static void checkNow(final Activity activity) {
         lastFetch = System.currentTimeMillis();
-        refresh(() -> showPopups(activity));
+        refresh(() -> {
+            if (activity == null || activity.isFinishing()) return;
+            if (isUpdateAvailable()) openUpdate(activity);
+            else Toast.makeText(activity, "You have the latest version (" + VERSION_NAME + ")", Toast.LENGTH_SHORT).show();
+        });
     }
 
     private static void showPopups(Activity activity) {
@@ -264,24 +330,16 @@ public class TrustedConfig {
             if (raw == null) return;
             JSONObject row = new JSONObject(raw);
 
-            int latest = row.optInt("latest_version_code", 0);
-            int minVersion = row.optInt("min_version_code", 0);
-            String url = row.optString("apk_url", "");
-            if (!url.startsWith("https://")) url = RELEASES_URL;
-            boolean popup = row.optBoolean("update_popup_enabled", false);
-            boolean force = row.optBoolean("force_update", false);
-            boolean blocked = minVersion > VERSION_CODE;
-
-            if (blocked) {
-                showUpdate(activity, row, url, true, true);
+            UpdateInfo u = getUpdateInfo();
+            if (u.blocked) {
+                openUpdate(activity);
                 return;
             }
-            if (popup && latest > VERSION_CODE) {
-                if (force || updateShownFor != latest) {
-                    updateShownFor = latest;
-                    showUpdate(activity, row, url, force, false);
-                    return;
-                }
+            // one popup per version (remembered, so it does not come back at every start)
+            if (u.available && ("popup".equals(u.mode) || "force".equals(u.mode)) && prefs().getInt("seen_update_popup", 0) < u.latest) {
+                prefs().edit().putInt("seen_update_popup", u.latest).apply();
+                openUpdate(activity);
+                return;
             }
 
             int annId = row.optInt("announcement_id", 0);
@@ -295,23 +353,5 @@ public class TrustedConfig {
         } catch (Exception e) {
             FileLog.e(e);
         }
-    }
-
-    private static void showUpdate(Activity activity, JSONObject row, String url, boolean blocking, boolean unsupported) {
-        String name = row.optString("latest_version_name", "");
-        String log = row.optString("changelog", "");
-        StringBuilder msg = new StringBuilder();
-        if (unsupported) {
-            msg.append("This version of TrustedGram is no longer supported.\nPlease install the latest version to continue.");
-        } else {
-            msg.append("TrustedGram ").append(name.isEmpty() ? "" : name + " ").append("is ready to install.");
-            if (blocking) msg.append("\nYou must update to keep using the app.");
-        }
-        if (!log.isEmpty()) msg.append("\n\n").append(log);
-        final String link = url;
-        shownDialog = TrustedPopup.show(activity,
-            blocking ? "Update required" : "Update available",
-            msg.toString(), "Update now", () -> Browser.openUrl(activity, link),
-            blocking ? null : "Later", blocking);
     }
 }

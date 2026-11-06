@@ -28,7 +28,85 @@ import org.telegram.messenger.TrustedConfig;
 /** Glass-style TrustedGram popup with the logo at the top centre. Used for announcements and updates. */
 public class TrustedPopup {
 
+    /** Fills the glass card (below the title) and returns nothing; the dialog is passed so buttons can dismiss it. */
+    private static final java.util.Map<Dialog, Runnable> dismissHooks = new java.util.WeakHashMap<>();
+
+    /** Lets the content of a popup run something when the popup closes. */
+    public static void onDismiss(Dialog dialog, Runnable r) {
+        dismissHooks.put(dialog, r);
+    }
+
+    public interface Content {
+        void build(Activity activity, LinearLayout card, Dialog dialog);
+    }
+
     public static Dialog show(Activity activity, String title, String message, String primary, Runnable onPrimary, String secondary, boolean blocking) {
+        return build(activity, title, blocking, (act, card, dialog) -> {
+            if (!TextUtils.isEmpty(message)) {
+                TextView msgView = new TextView(act);
+                msgView.setText(message);
+                msgView.setTextColor(0xFFC3C9DA);
+                msgView.setTextSize(15);
+                msgView.setLineSpacing(dp(2), 1f);
+                msgView.setGravity(Gravity.CENTER);
+                msgView.setMaxLines(12);
+                msgView.setEllipsize(TextUtils.TruncateAt.END);
+                LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
+                lp.topMargin = dp(10);
+                card.addView(msgView, lp);
+            }
+            card.addView(primaryButton(act, primary, v -> {
+                try {
+                    if (onPrimary != null) onPrimary.run();
+                } catch (Exception e) {
+                    FileLog.e(e);
+                }
+                if (!blocking) dialog.dismiss();
+            }), buttonParams(22));
+            if (secondary != null) {
+                card.addView(secondaryButton(act, secondary, v -> dialog.dismiss()), buttonParams2());
+            }
+        });
+    }
+
+    public static TextView primaryButton(Activity activity, String text, View.OnClickListener click) {
+        TextView b = new TextView(activity);
+        b.setText(text);
+        b.setTextColor(Color.WHITE);
+        b.setTextSize(16);
+        b.setTypeface(Typeface.DEFAULT_BOLD);
+        b.setGravity(Gravity.CENTER);
+        GradientDrawable pbg = new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, new int[]{0xFF2F6BFF, 0xFF6C8DFF});
+        pbg.setCornerRadius(dp(24));
+        b.setBackground(pbg);
+        b.setOnClickListener(click);
+        return b;
+    }
+
+    public static TextView secondaryButton(Activity activity, String text, View.OnClickListener click) {
+        TextView b = new TextView(activity);
+        b.setText(text);
+        b.setTextColor(0xFF9AA3BC);
+        b.setTextSize(15);
+        b.setGravity(Gravity.CENTER);
+        b.setOnClickListener(click);
+        return b;
+    }
+
+    public static LinearLayout.LayoutParams buttonParams(int topDp) {
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, dp(48));
+        lp.topMargin = dp(topDp);
+        return lp;
+    }
+
+    public static LinearLayout.LayoutParams buttonParams2() {
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, dp(44));
+        lp.topMargin = dp(4);
+        return lp;
+    }
+
+    /** The glass shell: card, logo on top, blur, animations. The content callback adds everything under the title. */
+    public static Dialog build(Activity activity, String title, boolean blocking, Content content) {
         final Dialog dialog = new Dialog(activity);
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
 
@@ -37,7 +115,6 @@ public class TrustedPopup {
         int width = Math.min(activity.getResources().getDisplayMetrics().widthPixels - dp(48), dp(360));
         root.addView(holder, new FrameLayout.LayoutParams(width, FrameLayout.LayoutParams.WRAP_CONTENT, Gravity.CENTER));
 
-        // glass card
         LinearLayout card = new LinearLayout(activity);
         card.setOrientation(LinearLayout.VERTICAL);
         card.setGravity(Gravity.CENTER_HORIZONTAL);
@@ -58,52 +135,7 @@ public class TrustedPopup {
         titleView.setGravity(Gravity.CENTER);
         card.addView(titleView, new LinearLayout.LayoutParams(-1, -2));
 
-        if (!TextUtils.isEmpty(message)) {
-            TextView msgView = new TextView(activity);
-            msgView.setText(message);
-            msgView.setTextColor(0xFFC3C9DA);
-            msgView.setTextSize(15);
-            msgView.setLineSpacing(dp(2), 1f);
-            msgView.setGravity(Gravity.CENTER);
-            msgView.setMaxLines(12);
-            msgView.setEllipsize(TextUtils.TruncateAt.END);
-            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
-            lp.topMargin = dp(10);
-            card.addView(msgView, lp);
-        }
-
-        TextView primaryBtn = new TextView(activity);
-        primaryBtn.setText(primary);
-        primaryBtn.setTextColor(Color.WHITE);
-        primaryBtn.setTextSize(16);
-        primaryBtn.setTypeface(Typeface.DEFAULT_BOLD);
-        primaryBtn.setGravity(Gravity.CENTER);
-        GradientDrawable pbg = new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, new int[]{0xFF2F6BFF, 0xFF6C8DFF});
-        pbg.setCornerRadius(dp(24));
-        primaryBtn.setBackground(pbg);
-        primaryBtn.setOnClickListener(v -> {
-            try {
-                if (onPrimary != null) onPrimary.run();
-            } catch (Exception e) {
-                FileLog.e(e);
-            }
-            if (!blocking) dialog.dismiss();
-        });
-        LinearLayout.LayoutParams plp = new LinearLayout.LayoutParams(-1, dp(48));
-        plp.topMargin = dp(22);
-        card.addView(primaryBtn, plp);
-
-        if (secondary != null) {
-            TextView secondaryBtn = new TextView(activity);
-            secondaryBtn.setText(secondary);
-            secondaryBtn.setTextColor(0xFF9AA3BC);
-            secondaryBtn.setTextSize(15);
-            secondaryBtn.setGravity(Gravity.CENTER);
-            secondaryBtn.setOnClickListener(v -> dialog.dismiss());
-            LinearLayout.LayoutParams slp = new LinearLayout.LayoutParams(-1, dp(44));
-            slp.topMargin = dp(4);
-            card.addView(secondaryBtn, slp);
-        }
+        content.build(activity, card, dialog);
 
         // logo, top centre, overlapping the card
         FrameLayout logoCircle = new FrameLayout(activity);
@@ -156,7 +188,11 @@ public class TrustedPopup {
         pulse.setRepeatCount(ObjectAnimator.INFINITE);
         pulse.setStartDelay(600);
         pulse.start();
-        dialog.setOnDismissListener(d -> pulse.cancel());
+        dialog.setOnDismissListener(d -> {
+            pulse.cancel();
+            Runnable r = dismissHooks.remove(dialog);
+            if (r != null) r.run();
+        });
         return dialog;
     }
 }

@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TrustedGram Admin</title>
+<style>
+  :root { --bg:#0e1118; --card:#171b25; --line:#262c3a; --text:#e8ecf6; --mute:#8a93a8; --blue:#3a7bff; --red:#ff5c6c; --green:#34c759; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:15px/1.45 -apple-system,Segoe UI,Roboto,sans-serif; }
+  header { padding:18px 20px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:12px; }
+  header h1 { font-size:18px; margin:0; }
+  header .ver { color:var(--mute); font-size:13px; margin-left:auto; }
+  main { max-width:860px; margin:0 auto; padding:18px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:18px; margin-bottom:16px; }
+  h2 { font-size:16px; margin:0 0 12px; }
+  label { display:block; color:var(--mute); font-size:13px; margin:12px 0 5px; }
+  input[type=text], input[type=number], input[type=password], textarea, select {
+    width:100%; background:#0f131b; color:var(--text); border:1px solid var(--line); border-radius:10px; padding:10px 12px; font:inherit; }
+  textarea { min-height:90px; resize:vertical; }
+  .row { display:flex; gap:12px; flex-wrap:wrap; } .row > div { flex:1; min-width:150px; }
+  button { background:var(--blue); color:#fff; border:0; border-radius:10px; padding:10px 16px; font:inherit; font-weight:600; cursor:pointer; }
+  button.ghost { background:#222838; } button.danger { background:var(--red); }
+  button:disabled { opacity:.5; cursor:default; }
+  .tabs { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; }
+  .tabs button { background:#1b2030; color:var(--mute); } .tabs button.on { background:var(--blue); color:#fff; }
+  .mode { display:flex; gap:10px; flex-wrap:wrap; }
+  .mode label { flex:1; min-width:210px; background:#0f131b; border:1px solid var(--line); border-radius:12px; padding:12px; margin:0; cursor:pointer; color:var(--text); }
+  .mode input { margin-right:8px; } .mode small { display:block; color:var(--mute); margin-top:4px; }
+  .mode label.sel { border-color:var(--blue); }
+  .bar { height:10px; background:#0f131b; border-radius:6px; overflow:hidden; margin-top:10px; } .bar > div { height:100%; width:0; background:var(--blue); transition:width .2s; }
+  .msg { margin-top:10px; font-size:14px; } .ok { color:var(--green); } .err { color:var(--red); }
+  table { width:100%; border-collapse:collapse; } td, th { padding:8px; border-bottom:1px solid var(--line); text-align:left; }
+  .hint { color:var(--mute); font-size:13px; margin-top:6px; }
+  .pill { display:inline-block; padding:2px 10px; border-radius:20px; background:#222838; font-size:12px; color:var(--mute); }
+  .hidden { display:none; }
+</style>
+</head>
+<body>
+<header><h1>TrustedGram Admin</h1><span class="ver" id="conn">not connected</span></header>
+<main>
+
+<div class="card" id="loginCard">
+  <h2>Connect</h2>
+  <label>Supabase URL</label>
+  <input type="text" id="url" value="https://lecmoprsrkfqpjvlcvhb.supabase.co">
+  <label>service_role key (Supabase &rarr; Project Settings &rarr; API). Stays only in this browser.</label>
+  <input type="password" id="key" placeholder="eyJ... or sb_secret_...">
+  <p class="hint">Open this page only on your own computer. The service_role key can change everything, so never put this file on a public website.</p>
+  <button id="connect">Connect</button>
+  <div class="msg" id="loginMsg"></div>
+</div>
+
+<div id="app" class="hidden">
+  <div class="tabs" id="tabs">
+    <button data-t="update" class="on">App update</button>
+    <button data-t="announce">Announcement</button>
+    <button data-t="verified">Verified badges</button>
+    <button data-t="switches">Switches</button>
+  </div>
+
+  <!-- UPDATE -->
+  <section id="t-update">
+    <div class="card">
+      <h2>Published now</h2>
+      <div id="current"></div>
+    </div>
+
+    <div class="card">
+      <h2>Publish a new update</h2>
+      <label>APK file</label>
+      <input type="file" id="apk" accept=".apk,application/vnd.android.package-archive">
+      <div class="row">
+        <div><label>Version code (must be higher than the number inside the app)</label><input type="number" id="vcode" min="1"></div>
+        <div><label>Version name (what users see)</label><input type="text" id="vname" placeholder="1.5"></div>
+      </div>
+      <label>What is new</label>
+      <textarea id="log" placeholder="- New feed&#10;- Faster chats"></textarea>
+
+      <label>How should users get it?</label>
+      <div class="mode" id="modes">
+        <label><input type="radio" name="mode" value="button" checked>Button only
+          <small>No popup. An "Update available" button appears in the app menu and TGram Settings.</small></label>
+        <label><input type="radio" name="mode" value="popup">Popup once + button
+          <small>One popup per version (not at every restart), plus the button.</small></label>
+        <label><input type="radio" name="mode" value="force">Force
+          <small>Blocks builds below "Oldest allowed version". Everyone else just gets popup + button.</small></label>
+      </div>
+      <div class="row">
+        <div><label>Oldest allowed version code (only used for Force; 0 = block everything older than this update)</label><input type="number" id="minv" value="0" min="0"></div>
+      </div>
+      <p class="hint">Tip: Force with "oldest allowed" set to a low number blocks only very old builds. Users never leave the app: it downloads the file, shows Install, and opens again after updating.</p>
+
+      <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">
+        <button id="publish">Upload &amp; publish</button>
+        <button class="ghost" id="saveOnly">Save settings only (no new file)</button>
+        <button class="danger" id="unpublish">Turn updates off</button>
+      </div>
+      <div class="bar hidden" id="bar"><div id="barFill"></div></div>
+      <div class="msg" id="upMsg"></div>
+    </div>
+  </section>
+
+  <!-- ANNOUNCEMENT -->
+  <section id="t-announce" class="hidden">
+    <div class="card">
+      <h2>Announcement popup</h2>
+      <p class="hint">Every user sees a new announcement once.</p>
+      <label>Title</label><input type="text" id="aTitle">
+      <label>Text</label><textarea id="aText"></textarea>
+      <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">
+        <button id="aSend">Send to everyone</button>
+        <button class="ghost" id="aOff">Turn off</button>
+      </div>
+      <div class="msg" id="aMsg"></div>
+    </div>
+  </section>
+
+  <!-- VERIFIED -->
+  <section id="t-verified" class="hidden">
+    <div class="card">
+      <h2>Verified badges</h2>
+      <div class="row">
+        <div><label>User or channel id</label><input type="text" id="vId" placeholder="123456789 or -100123456789"></div>
+        <div><label>Type</label><select id="vKind"><option value="user">User / bot</option><option value="channel">Channel / group</option></select></div>
+      </div>
+      <div style="margin-top:12px"><button id="vAdd">Add badge</button></div>
+      <div class="msg" id="vMsg"></div>
+      <table id="vTable"></table>
+    </div>
+  </section>
+
+  <!-- SWITCHES -->
+  <section id="t-switches" class="hidden">
+    <div class="card">
+      <h2>Feature switches (JSON)</h2>
+      <p class="hint">Saved in app_config.tgram_settings. Example: {"ghost": true}</p>
+      <textarea id="sw" style="min-height:160px;font-family:monospace"></textarea>
+      <div style="margin-top:12px"><button id="swSave">Save</button></div>
+      <div class="msg" id="swMsg"></div>
+    </div>
+  </section>
+</div>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+let BASE = '', KEY = '', ROW = {};
+
+function H(extra) { return Object.assign({ apikey: KEY, Authorization: 'Bearer ' + KEY }, extra || {}); }
+function say(id, text, ok) { const e = $(id); e.textContent = text; e.className = 'msg ' + (ok === true ? 'ok' : ok === false ? 'err' : ''); }
+function fmtMB(b) { return (b / 1048576).toFixed(1) + ' MB'; }
+
+async function api(path, opts) {
+  const r = await fetch(BASE + path, opts);
+  if (!r.ok) throw new Error(r.status + ' ' + (await r.text()));
+  const t = await r.text();
+  return t ? JSON.parse(t) : null;
+}
+
+async function loadRow() {
+  const rows = await api('/rest/v1/app_config?id=eq.1&select=*', { headers: H() });
+  if (!rows || !rows.length) throw new Error('app_config row with id=1 not found');
+  ROW = rows[0];
+  renderCurrent();
+  $('aTitle').value = ROW.announcement_title || '';
+  $('aText').value = ROW.announcement_text || '';
+  $('sw').value = JSON.stringify(ROW.tgram_settings || {}, null, 2);
+  if (!$('vcode').value) $('vcode').value = (ROW.latest_version_code || 0) + 1;
+  document.querySelector('input[name=mode][value=' + (ROW.update_mode || 'button') + ']').checked = true;
+  $('minv').value = ROW.min_version_code || 0;
+  markModes();
+}
+
+function renderCurrent() {
+  const mode = ROW.update_mode || (ROW.force_update ? 'force' : ROW.update_popup_enabled ? 'popup' : 'button');
+  $('current').innerHTML =
+    '<div>Version code: <b>' + (ROW.latest_version_code || '-') + '</b> &nbsp; name: <b>' + (ROW.latest_version_name || '-') + '</b></div>' +
+    '<div>Mode: <span class="pill">' + mode + '</span> &nbsp; oldest allowed: <b>' + (ROW.min_version_code || 0) + '</b></div>' +
+    '<div>File: ' + (ROW.apk_url ? '<a style="color:#8fb4ff" href="' + ROW.apk_url + '" target="_blank">download link</a> (' + (ROW.apk_size ? fmtMB(ROW.apk_size) : '?') + ')' : 'no update published') + '</div>';
+}
+
+function markModes() {
+  document.querySelectorAll('#modes label').forEach(l => l.classList.toggle('sel', l.querySelector('input').checked));
+}
+document.querySelectorAll('#modes input').forEach(i => i.addEventListener('change', markModes));
+
+document.querySelectorAll('#tabs button').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('#tabs button').forEach(x => x.classList.toggle('on', x === b));
+  ['update', 'announce', 'verified', 'switches'].forEach(t => $('t-' + t).classList.toggle('hidden', t !== b.dataset.t));
+  if (b.dataset.t === 'verified') loadVerified();
+}));
+
+async function patch(fields) {
+  await api('/rest/v1/app_config?id=eq.1', { method: 'PATCH', headers: H({ 'Content-Type': 'application/json', Prefer: 'return=minimal' }), body: JSON.stringify(fields) });
+  await loadRow();
+}
+
+function modeFields() {
+  const mode = document.querySelector('input[name=mode]:checked').value;
+  return {
+    update_mode: mode,
+    update_popup_enabled: mode !== 'button',   // kept for older app builds
+    force_update: mode === 'force',            // kept for older app builds
+    min_version_code: parseInt($('minv').value || '0', 10),
+    latest_version_name: $('vname').value.trim(),
+    changelog: $('log').value.trim()
+  };
+}
+
+async function sha256Hex(buf) {
+  const h = await crypto.subtle.digest('SHA-256', buf);
+  return [...new Uint8Array(h)].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function upload(name, file) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', BASE + '/storage/v1/object/apk/' + encodeURIComponent(name));
+    xhr.setRequestHeader('apikey', KEY);
+    xhr.setRequestHeader('Authorization', 'Bearer ' + KEY);
+    xhr.setRequestHeader('x-upsert', 'true');
+    xhr.setRequestHeader('Content-Type', 'application/vnd.android.package-archive');
+    xhr.upload.onprogress = e => { if (e.lengthComputable) $('barFill').style.width = Math.round(e.loaded * 100 / e.total) + '%'; };
+    xhr.onload = () => xhr.status < 300 ? resolve() : reject(new Error(xhr.status + ' ' + xhr.responseText));
+    xhr.onerror = () => reject(new Error('network error'));
+    xhr.send(file);
+  });
+}
+
+$('publish').onclick = async () => {
+  const file = $('apk').files[0];
+  const code = parseInt($('vcode').value, 10);
+  if (!file) return say('upMsg', 'Choose the APK file first.', false);
+  if (!code) return say('upMsg', 'Enter the version code.', false);
+  if (code <= (ROW.latest_version_code || 0) && !confirm('Version code ' + code + ' is not higher than the published ' + ROW.latest_version_code + '. Continue?')) return;
+  $('publish').disabled = true; $('bar').classList.remove('hidden'); $('barFill').style.width = '0';
+  try {
+    say('upMsg', 'Calculating checksum...');
+    const sum = await sha256Hex(await file.arrayBuffer());
+    say('upMsg', 'Uploading ' + fmtMB(file.size) + '...');
+    const name = 'TrustedGram-' + code + '.apk';
+    await upload(name, file);
+    const url = BASE + '/storage/v1/object/public/apk/' + encodeURIComponent(name);
+    await patch(Object.assign(modeFields(), { latest_version_code: code, apk_url: url, apk_sha256: sum, apk_size: file.size }));
+    say('upMsg', 'Published. Users with a lower version code now get the update.', true);
+    $('vcode').value = code + 1;
+  } catch (e) { say('upMsg', 'Failed: ' + e.message, false); }
+  $('publish').disabled = false;
+};
+
+$('saveOnly').onclick = async () => {
+  try { await patch(modeFields()); say('upMsg', 'Settings saved.', true); } catch (e) { say('upMsg', 'Failed: ' + e.message, false); }
+};
+
+$('unpublish').onclick = async () => {
+  if (!confirm('Remove the update? Users will no longer see an update button.')) return;
+  try { await patch({ apk_url: '', update_mode: 'button', update_popup_enabled: false, force_update: false, min_version_code: 0 }); say('upMsg', 'Updates turned off.', true); }
+  catch (e) { say('upMsg', 'Failed: ' + e.message, false); }
+};
+
+$('aSend').onclick = async () => {
+  try {
+    await patch({ announcement_title: $('aTitle').value.trim(), announcement_text: $('aText').value.trim(), announcement_enabled: true, announcement_id: (ROW.announcement_id || 0) + 1 });
+    say('aMsg', 'Sent. Each user sees it once.', true);
+  } catch (e) { say('aMsg', 'Failed: ' + e.message, false); }
+};
+$('aOff').onclick = async () => {
+  try { await patch({ announcement_enabled: false }); say('aMsg', 'Announcement turned off.', true); } catch (e) { say('aMsg', 'Failed: ' + e.message, false); }
+};
+
+async function loadVerified() {
+  try {
+    const rows = await api('/rest/v1/verified?select=id,kind&order=kind', { headers: H() });
+    $('vTable').innerHTML = '<tr><th>ID</th><th>Type</th><th></th></tr>' + rows.map(r =>
+      '<tr><td>' + r.id + '</td><td>' + r.kind + '</td><td><button class="danger" onclick="vDel(\'' + r.id + '\')">Remove</button></td></tr>').join('');
+  } catch (e) { say('vMsg', 'Failed: ' + e.message, false); }
+}
+window.vDel = async id => {
+  try { await api('/rest/v1/verified?id=eq.' + encodeURIComponent(id), { method: 'DELETE', headers: H() }); loadVerified(); }
+  catch (e) { say('vMsg', 'Failed: ' + e.message, false); }
+};
+$('vAdd').onclick = async () => {
+  const id = $('vId').value.trim();
+  if (!/^-?\d+$/.test(id)) return say('vMsg', 'The id must be a number.', false);
+  try {
+    await api('/rest/v1/verified', { method: 'POST', headers: H({ 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=minimal' }), body: JSON.stringify({ id: id, kind: $('vKind').value }) });
+    $('vId').value = ''; say('vMsg', 'Added.', true); loadVerified();
+  } catch (e) { say('vMsg', 'Failed: ' + e.message, false); }
+};
+
+$('swSave').onclick = async () => {
+  try { await patch({ tgram_settings: JSON.parse($('sw').value || '{}') }); say('swMsg', 'Saved.', true); }
+  catch (e) { say('swMsg', 'Failed: ' + e.message, false); }
+};
+
+$('connect').onclick = async () => {
+  BASE = $('url').value.trim().replace(/\/$/, ''); KEY = $('key').value.trim();
+  if (!BASE || !KEY) return say('loginMsg', 'Enter the URL and the key.', false);
+  try {
+    await loadRow();
+    localStorage.setItem('tg_admin_url', BASE); localStorage.setItem('tg_admin_key', KEY);
+    $('loginCard').classList.add('hidden'); $('app').classList.remove('hidden'); $('conn').textContent = 'connected';
+  } catch (e) { say('loginMsg', 'Could not connect: ' + e.message, false); }
+};
+
+(function init() {
+  const u = localStorage.getItem('tg_admin_url'), k = localStorage.getItem('tg_admin_key');
+  if (u) $('url').value = u; if (k) { $('key').value = k; $('connect').click(); }
+})();
+</script>
+</body>
+</html>

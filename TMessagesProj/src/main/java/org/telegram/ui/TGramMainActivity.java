@@ -29,7 +29,7 @@ public class TGramMainActivity extends UniversalFragment {
         return true;
     }
 
-    private static final int ID_GENERAL = 1, ID_APPEARANCE = 2, ID_GHOST = 4, ID_OTHER = 5, ID_FOLDERS = 6, ID_LINK = 100;
+    private static final int ID_GENERAL = 1, ID_APPEARANCE = 2, ID_GHOST = 4, ID_OTHER = 5, ID_FOLDERS = 6, ID_UPDATE = 7, ID_LINK = 100;
 
     private static final String[][] LINKS = {
         {"Updates", "trustedgram"},
@@ -113,6 +113,11 @@ public class TGramMainActivity extends UniversalFragment {
         if (headerView == null) headerView = buildHeader(getContext());
         items.add(UItem.asCustom(headerView, 190));
         items.add(UItem.asShadow(null));
+        if (org.telegram.messenger.TrustedConfig.isUpdateAvailable()) {
+            org.telegram.messenger.TrustedConfig.UpdateInfo upd = org.telegram.messenger.TrustedConfig.getUpdateInfo();
+            items.add(UItem.asButton(ID_UPDATE, R.drawable.msg_download, "Update available", upd.name.isEmpty() ? "Tap to download" : "Version " + upd.name + " - tap to download"));
+            items.add(UItem.asShadow(null));
+        }
         items.add(UItem.asHeader("Categories"));
         items.add(UItem.asButton(ID_GENERAL, R.drawable.msg_settings, "General"));
         items.add(UItem.asButton(ID_APPEARANCE, R.drawable.msg_palette, "Appearance"));
@@ -130,6 +135,7 @@ public class TGramMainActivity extends UniversalFragment {
     @Override
     protected void onClick(UItem item, View view, int position, float x, float y) {
         switch (item.id) {
+            case ID_UPDATE: org.telegram.messenger.TrustedConfig.openUpdate(getParentActivity()); return;
             case ID_GENERAL: presentFragment(new TGramSettingsActivity()); return;
             case ID_APPEARANCE: presentFragment(new TGramAppearanceActivity()); return;
             case ID_FOLDERS: presentFragment(new TGramFoldersActivity()); return;

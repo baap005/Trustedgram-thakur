@@ -47,7 +47,6 @@ import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
-import android.graphics.drawable.GradientDrawable;
 import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Build;
@@ -2700,10 +2699,7 @@ public class ChatActivityEnterView extends FrameLayout implements
             }
         };
         frameLayout.setClipChildren(false);
-        updateComposerAppearance();
-        // Inset the compose field so it reads as a floating iOS-style input capsule,
-        // with the send control remaining visually separate on its right.
-        textFieldContainer.addView(frameLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM, isChat ? 8 : 0, 0, DEFAULT_HEIGHT + (isChat ? 8 : 0), 0));
+        textFieldContainer.addView(frameLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM, 0, 0, DEFAULT_HEIGHT, 0));
 
         emojiButton = new ChatActivityEnterViewAnimatedIconView(context) {
             @Override
@@ -2719,10 +2715,10 @@ public class ChatActivityEnterView extends FrameLayout implements
         };
         emojiButton.setContentDescription(getString(R.string.AccDescrEmojiButton));
         emojiButton.setFocusable(true);
-        int padding = dp(8);
+        int padding = dp(7.5f);
         emojiButton.setPadding(padding, padding, padding, padding);
         emojiButton.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_glass_defaultIcon), PorterDuff.Mode.SRC_IN));
-        emojiButton.setBackground(Theme.createInsetRoundRectDrawable(getThemedColor(Theme.key_listSelector), dp(20), dp(1), dp(3)));
+        emojiButton.setBackground(Theme.createInsetRoundRectDrawable(getThemedColor(Theme.key_listSelector), dp(19), dp(1), dp(3)));
         emojiButton.setOnClickListener(v -> {
             if (adjustPanLayoutHelper != null && adjustPanLayoutHelper.animationInProgress()) {
                 return;
@@ -2840,7 +2836,7 @@ public class ChatActivityEnterView extends FrameLayout implements
             attachButton.setScaleType(ImageView.ScaleType.CENTER);
             attachButton.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_glass_defaultIcon), PorterDuff.Mode.MULTIPLY));
             attachButton.setImageResource(R.drawable.msg_input_attach2);
-            attachButton.setBackground(Theme.createInsetRoundRectDrawable(getThemedColor(Theme.key_listSelector), dp(18), dp(1), dp(3)));
+            attachButton.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)));
             messageEditTextContainer.addView(attachButton, LayoutHelper.createFrame(DEFAULT_HEIGHT, DEFAULT_HEIGHT, Gravity.BOTTOM | Gravity.RIGHT));
             attachButton.setOnClickListener(v -> {
                 if (adjustPanLayoutHelper != null && adjustPanLayoutHelper.animationInProgress() || attachLayoutPaddingAlpha == 0f) {
@@ -3989,7 +3985,7 @@ public class ChatActivityEnterView extends FrameLayout implements
         expandStickersButton.setScaleX(0.1f);
         expandStickersButton.setScaleY(0.1f);
         expandStickersButton.setAlpha(0.0f);
-        expandStickersButton.setBackground(Theme.createInsetRoundRectDrawable(getThemedColor(Theme.key_listSelector), dp(18), dp(1), dp(3)));
+        expandStickersButton.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)));
         sendButtonContainer.addView(expandStickersButton, LayoutHelper.createFrame(DEFAULT_HEIGHT, DEFAULT_HEIGHT, Gravity.RIGHT | Gravity.BOTTOM));
         expandStickersButton.setOnClickListener(v -> {
             if (expandStickersButton.getVisibility() != VISIBLE || expandStickersButton.getAlpha() != 1.0f || waitingForKeyboardOpen || (keyboardVisible && messageEditText != null && messageEditText.isFocused())) {
@@ -4719,7 +4715,6 @@ public class ChatActivityEnterView extends FrameLayout implements
     public boolean isStories;
 
     Paint backgroundPaint = new Paint();
-    private final Paint composeGlassEdgePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private float composeShadowAlpha = 1f;
     private Rect blurBounds = new Rect();
     @Override
@@ -4744,12 +4739,6 @@ public class ChatActivityEnterView extends FrameLayout implements
             Theme.chat_composeShadowDrawable.draw(canvas);
         }
 
-        // In chats, keep the composer capsule itself visible without painting
-        // the old full-width rectangular panel behind it.
-        if (isChat) {
-            return;
-        }
-
         if (allowBlur) {
             backgroundPaint.setColor(getThemedColor(Theme.key_chat_messagePanelBackground));
             if (SharedConfig.chatBlurEnabled() && sizeNotifierLayout != null) {
@@ -4761,11 +4750,6 @@ public class ChatActivityEnterView extends FrameLayout implements
         } else {
             canvas.drawRect(0, bottom, getWidth(), getHeight(), getThemedPaint(Theme.key_paint_chatComposeBackground));
         }
-
-        composeGlassEdgePaint.setColor(ColorUtils.setAlphaComponent(Color.WHITE, 24));
-        composeGlassEdgePaint.setStrokeWidth(dpf2(0.7f));
-        composeGlassEdgePaint.setStyle(Paint.Style.STROKE);
-        canvas.drawLine(dp(16), bottom, getWidth() - dp(16), bottom, composeGlassEdgePaint);
     }
 
     public float getVisualHeight() {
@@ -10383,21 +10367,8 @@ public class ChatActivityEnterView extends FrameLayout implements
         return trendingStickersAlert;
     }
 
-    private void updateComposerAppearance() {
-        if (!isChat || messageEditTextContainer == null) {
-            return;
-        }
-        GradientDrawable background = new GradientDrawable();
-        background.setShape(GradientDrawable.RECTANGLE);
-        background.setColor(Theme.multAlpha(getThemedColor(Theme.key_chat_messagePanelBackground), 0.98f));
-        background.setCornerRadius(dp(25));
-        background.setStroke(dp(1), Theme.multAlpha(getThemedColor(Theme.key_windowBackgroundWhiteBlackText), 0.12f));
-        messageEditTextContainer.setBackground(background);
-    }
-
     @Override
     public void updateColors() {
-        updateComposerAppearance();
         if (messageSendPreview != null) {
             messageSendPreview.updateColors();
         }
@@ -15428,8 +15399,8 @@ public class ChatActivityEnterView extends FrameLayout implements
 
         public void setBlurredBackgroundDrawable(BlurredBackgroundDrawable blurredBackgroundDrawable) {
             this.blurredBackgroundDrawable = blurredBackgroundDrawable;
-            this.blurredBackgroundDrawable.setRadius(dp(24));
-            this.blurredBackgroundDrawable.setPadding(dp(6));
+            this.blurredBackgroundDrawable.setRadius(dp(22));
+            this.blurredBackgroundDrawable.setPadding(dp(4));
         }
 
         public boolean newCounterPos;
