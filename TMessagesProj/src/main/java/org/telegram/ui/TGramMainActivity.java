@@ -29,7 +29,7 @@ public class TGramMainActivity extends UniversalFragment {
         return true;
     }
 
-    private static final int ID_GENERAL = 1, ID_APPEARANCE = 2, ID_GHOST = 4, ID_OTHER = 5, ID_FOLDERS = 6, ID_UPDATE = 7, ID_LINK = 100;
+    private static final int ID_GENERAL = 1, ID_APPEARANCE = 2, ID_GHOST = 4, ID_OTHER = 5, ID_FOLDERS = 6, ID_UPDATE = 7, ID_HISTORY = 8, ID_LINK = 100;
 
     private static final String[][] LINKS = {
         {"Updates", "trustedgram"},
@@ -123,6 +123,7 @@ public class TGramMainActivity extends UniversalFragment {
         items.add(UItem.asButton(ID_APPEARANCE, R.drawable.msg_palette, "Appearance"));
         items.add(UItem.asButton(ID_FOLDERS, R.drawable.msg_folders, "Chat Folders"));
         items.add(UItem.asButton(ID_GHOST, R.drawable.ghost, "Ghost mode"));
+        items.add(UItem.asButton(ID_HISTORY, R.drawable.msg_recent, "Message history", "View locally saved deleted and edited message versions"));
         items.add(UItem.asButton(ID_OTHER, R.drawable.msg_info, "Other"));
         items.add(UItem.asShadow(null));
         items.add(UItem.asHeader("Links"));
@@ -140,6 +141,7 @@ public class TGramMainActivity extends UniversalFragment {
             case ID_APPEARANCE: presentFragment(new TGramAppearanceActivity()); return;
             case ID_FOLDERS: presentFragment(new TGramFoldersActivity()); return;
             case ID_GHOST: presentFragment(new TGramGhostActivity()); return;
+            case ID_HISTORY: presentFragment(new TGramMessageHistoryActivity()); return;
             case ID_OTHER: presentFragment(new TGramOtherActivity()); return;
         }
         if (item.id >= ID_LINK && item.id < ID_LINK + LINKS.length) {
