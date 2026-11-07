@@ -1,6 +1,10 @@
 name: Build TrustedGram
 
-on: workflow_dispatch
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/trustedgram-bypass-suite
 
 jobs:
   build:
