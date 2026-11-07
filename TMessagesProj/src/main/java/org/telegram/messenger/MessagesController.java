@@ -19382,6 +19382,9 @@ public class MessagesController extends BaseController implements NotificationCe
                     deletedMessages = new LongSparseArray<>();
                 }
                 long dialogId = -update.channel_id;
+                for (int deletedId : update.messages) {
+                    TrustedMessageArchive.archiveBeforeDelete(currentAccount, dialogId, deletedId);
+                }
                 ArrayList<Integer> arrayList = deletedMessages.get(dialogId);
                 if (arrayList == null) {
                     arrayList = new ArrayList<>();
@@ -19507,8 +19510,9 @@ public class MessagesController extends BaseController implements NotificationCe
                     }
                 }
 
-                MessageObject.getDialogId(message);
-
+                long archiveDialogId = MessageObject.getDialogId(message);
+                TrustedMessageArchive.archiveBeforeEdit(currentAccount, archiveDialogId, message.id);
+                
                 ConcurrentHashMap<Long, Integer> read_max = message.out ? dialogs_read_outbox_max : dialogs_read_inbox_max;
                 Integer value = read_max.get(message.dialog_id);
                 if (value == null) {
