@@ -14814,8 +14814,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 setItemVisible(sendItem, false, false);
             }
             boolean canSaveViewOnce = TrustedViewOnce.isSaveEnabled()
-                    && MessageObject.isSecretMedia(newMessageObject.messageOwner)
-                    && !noforwards;
+                    && MessageObject.isSecretMedia(newMessageObject.messageOwner);
             if (isEmbedVideo || newMessageObject.messageOwner.ttl != 0 && newMessageObject.messageOwner.ttl < 60 * 60 || noforwards) {
                 allowShare = false;
                 galleryButton.setVisibility(canSaveViewOnce ? View.VISIBLE : View.GONE);
