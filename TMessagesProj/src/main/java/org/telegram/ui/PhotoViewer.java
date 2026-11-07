@@ -188,6 +188,7 @@ import org.telegram.messenger.SecureDocument;
 import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.TranslateController;
+import org.telegram.messenger.TrustedViewOnce;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
@@ -14812,10 +14813,13 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             if (DialogObject.isEncryptedDialog(currentDialogId) && !isEmbedVideo || noforwards) {
                 setItemVisible(sendItem, false, false);
             }
+            boolean canSaveViewOnce = TrustedViewOnce.isSaveEnabled()
+                    && MessageObject.isSecretMedia(newMessageObject.messageOwner)
+                    && !noforwards;
             if (isEmbedVideo || newMessageObject.messageOwner.ttl != 0 && newMessageObject.messageOwner.ttl < 60 * 60 || noforwards) {
                 allowShare = false;
-                galleryButton.setVisibility(View.GONE);
-                galleryGap.setVisibility(View.GONE);
+                galleryButton.setVisibility(canSaveViewOnce ? View.VISIBLE : View.GONE);
+                galleryGap.setVisibility(canSaveViewOnce ? View.VISIBLE : View.GONE);
                 menuItem.hideSubItem(gallery_menu_share);
                 setItemVisible(editItem, false, animated);
             } else {
