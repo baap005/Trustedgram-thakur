@@ -50,14 +50,13 @@ public class TrustedGhost {
         load();
         hideOnline = v;
         save("ghost_online", v);
-        if (v) {
-            // tell the server right away that we are offline
-            for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
-                if (UserConfig.getInstance(a).isClientActivated()) {
-                    TL_account.updateStatus req = new TL_account.updateStatus();
-                    req.offline = true;
-                    ConnectionsManager.getInstance(a).sendRequest(req, (r, e) -> {});
-                }
+        // Apply the selected presence state immediately for every active account.
+        // The outgoing-request hook also keeps later automatic status updates consistent.
+        for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+            if (UserConfig.getInstance(a).isClientActivated()) {
+                TL_account.updateStatus req = new TL_account.updateStatus();
+                req.offline = v;
+                ConnectionsManager.getInstance(a).sendRequest(req, (r, e) -> {});
             }
         }
     }
