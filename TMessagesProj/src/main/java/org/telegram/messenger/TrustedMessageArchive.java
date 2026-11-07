@@ -47,7 +47,7 @@ public final class TrustedMessageArchive {
             item.put("event", event);
             item.put("text", text);
             item.put("has_media", message.media != null);
-            item.put("sender_id", DialogObject.getPeerDialogId(message.from_id));
+            item.put("sender_id", message.from_id == null ? 0 : DialogObject.getPeerDialogId(message.from_id));
 
             // Avoid duplicate snapshots when Telegram replays an update.
             for (int i = old.length() - 1; i >= 0; i--) {
