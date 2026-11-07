@@ -18850,6 +18850,14 @@ public class MessagesController extends BaseController implements NotificationCe
                 dialogs_read_outbox_max.put(dialogId, Math.max(value, update.max_id));
             } else if (baseUpdate instanceof TL_update.TL_updateDeleteMessages) {
                 TL_update.TL_updateDeleteMessages update = (TL_update.TL_updateDeleteMessages) baseUpdate;
+                // TrustedGram: snapshot ordinary private/basic-group messages before local deletion.
+                // TL_updateDeleteMessages has no peer field, so resolve IDs against known dialogs.
+                for (int d = 0; d < dialogs_dict.size(); d++) {
+                    long archiveDialogId = dialogs_dict.keyAt(d);
+                    for (int deletedId : update.messages) {
+                        TrustedMessageArchive.archiveBeforeDelete(currentAccount, archiveDialogId, deletedId);
+                    }
+                }
                 if (deletedMessages == null) {
                     deletedMessages = new LongSparseArray<>();
                 }
