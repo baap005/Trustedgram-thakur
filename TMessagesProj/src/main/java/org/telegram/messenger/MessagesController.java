@@ -18851,11 +18851,15 @@ public class MessagesController extends BaseController implements NotificationCe
             } else if (baseUpdate instanceof TL_update.TL_updateDeleteMessages) {
                 TL_update.TL_updateDeleteMessages update = (TL_update.TL_updateDeleteMessages) baseUpdate;
                 // TrustedGram: snapshot ordinary private/basic-group messages before local deletion.
-                // TL_updateDeleteMessages has no peer field, so resolve IDs against known dialogs.
-                for (int d = 0; d < dialogs_dict.size(); d++) {
-                    long archiveDialogId = dialogs_dict.keyAt(d);
-                    for (int deletedId : update.messages) {
-                        TrustedMessageArchive.archiveBeforeDelete(currentAccount, archiveDialogId, deletedId);
+                // Prefer the loaded-message index; fall back to known dialogs when the message is not in memory.
+                for (int deletedId : update.messages) {
+                    MessageObject cachedMessage = dialogMessagesByIds.get(deletedId);
+                    if (cachedMessage != null) {
+                        TrustedMessageArchive.archiveBeforeDelete(currentAccount, cachedMessage.getDialogId(), deletedId);
+                    } else {
+                        for (int d = 0; d < dialogs_dict.size(); d++) {
+                            TrustedMessageArchive.archiveBeforeDelete(currentAccount, dialogs_dict.keyAt(d), deletedId);
+                        }
                     }
                 }
                 if (deletedMessages == null) {
