@@ -48,6 +48,8 @@ import android.graphics.Path;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
+import android.view.WindowInsets;
+import android.view.DisplayCutout;
 import android.graphics.RectF;
 import android.graphics.Region;
 import android.graphics.Shader;
@@ -3404,6 +3406,10 @@ public class ChatActivity extends BaseFragment implements
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
+        if (blackHoleEffect != null) {
+            blackHoleEffect.kill();
+            blackHoleEffect = null;
+        }
         if (messageMetricsView != null) {
             messageMetricsView.finish();
         }
@@ -7321,7 +7327,138 @@ public class ChatActivity extends BaseFragment implements
             }
 
             @Override
-            public long getDialogId() {
+            private BlackHoleDeleteEffect blackHoleEffect;
+
+    /**
+     * "Clear history" as a black hole. Snapshots the message list and the rest of the screen, puts
+     * a GL overlay above the chat and runs the effect. {@code hideHistory} is called when the
+     * overlay's first frame is on screen (it looks exactly like the chat), {@code showUndo} when
+     * everything is swallowed.
+     *
+     * @return false if the effect can't be used (caller should clear the history as usual).
+     */
+    private boolean startBlackHoleClear(Runnable hideHistory, Runnable showUndo) {
+        if (blackHoleEffect != null || !BlackHoleDeleteEffect.supports() || !LiteMode.isEnabled(LiteMode.FLAG_CHAT_THANOS)) {
+            return false;
+        }
+        if (getContext() == null || contentView == null || chatListView == null || currentEncryptedChat != null) {
+            return false;
+        }
+        if (chatListView.getChildCount() == 0 || chatListView.getWidth() <= 0 || chatListView.getHeight() <= 0 || contentView.getWidth() <= 0 || contentView.getHeight() <= 0) {
+            return false;
+        }
+        try {
+            if (android.provider.Settings.Global.getFloat(getContext().getContentResolver(), android.provider.Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f) {
+                return false;
+            }
+        } catch (Exception ignore) {}
+
+        final int viewW = contentView.getWidth(), viewH = contentView.getHeight();
+        final float scale = Math.min(1f, 1080f / Math.max(viewW, 1));
+        Bitmap listBitmap = null, backdropBitmap = null;
+        try {
+            // Message list
+            final int lw = chatListView.getWidth(), lh = chatListView.getHeight();
+            listBitmap = Bitmap.createBitmap(Math.max(1, Math.round(lw * scale)), Math.max(1, Math.round(lh * scale)), Bitmap.Config.ARGB_8888);
+            Canvas listCanvas = new Canvas(listBitmap);
+            listCanvas.scale(listBitmap.getWidth() / (float) lw, listBitmap.getHeight() / (float) lh);
+            chatListView.draw(listCanvas);
+
+            // Everything else (wallpaper, bars), without the list
+            try {
+                backdropBitmap = Bitmap.createBitmap(Math.max(1, Math.round(viewW * scale)), Math.max(1, Math.round(viewH * scale)), Bitmap.Config.ARGB_8888);
+                Canvas backdropCanvas = new Canvas(backdropBitmap);
+                backdropCanvas.scale(backdropBitmap.getWidth() / (float) viewW, backdropBitmap.getHeight() / (float) viewH);
+                final float listAlpha = chatListView.getAlpha();
+                chatListView.setAlpha(0f);
+                try {
+                    contentView.draw(backdropCanvas);
+                } finally {
+                    chatListView.setAlpha(listAlpha);
+                }
+            } catch (Throwable e) {
+                FileLog.e(e);
+                if (backdropBitmap != null) {
+                    backdropBitmap.recycle();
+                }
+                backdropBitmap = null;
+            }
+        } catch (Throwable e) {
+            FileLog.e(e);
+            if (listBitmap != null) {
+                listBitmap.recycle();
+            }
+            if (backdropBitmap != null) {
+                backdropBitmap.recycle();
+            }
+            return false;
+        }
+
+        // Where the hole opens: the camera cutout at the top if there is one, else the middle of the status bar.
+        final int[] loc = new int[2];
+        contentView.getLocationInWindow(loc);
+        float holeX = viewW / 2f;
+        float holeY = AndroidUtilities.statusBarHeight / 2f - loc[1];
+        if (Build.VERSION.SDK_INT >= 28) {
+            try {
+                WindowInsets insets = contentView.getRootWindowInsets();
+                DisplayCutout cutout = insets != null ? insets.getDisplayCutout() : null;
+                if (cutout != null) {
+                    for (Rect rect : cutout.getBoundingRects()) {
+                        final float cx = rect.centerX() - loc[0];
+                        if (rect.top <= AndroidUtilities.dp(8) && cx > viewW * 0.3f && cx < viewW * 0.7f) {
+                            holeX = cx;
+                            holeY = rect.centerY() - loc[1];
+                            break;
+                        }
+                    }
+                }
+            } catch (Throwable ignore) {}
+        }
+        holeY = Math.max(holeY, AndroidUtilities.dp(10));
+
+        final BlackHoleDeleteEffect effect = new BlackHoleDeleteEffect(getContext());
+        blackHoleEffect = effect;
+        final boolean[] hidden = new boolean[1];
+        final boolean[] done = new boolean[1];
+        final Runnable finish = () -> {
+            if (!hidden[0]) {
+                hidden[0] = true;
+                hideHistory.run();
+            }
+            if (!done[0]) {
+                done[0] = true;
+                if (blackHoleEffect == effect) {
+                    blackHoleEffect = null;
+                }
+                AndroidUtilities.removeFromParent(effect);
+                showUndo.run();
+            }
+        };
+        contentView.addView(effect, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        effect.start(listBitmap, chatListView.getX(), chatListView.getY(), chatListView.getWidth(), chatListView.getHeight(), backdropBitmap, holeX, holeY, new BlackHoleDeleteEffect.Listener() {
+            @Override
+            public void onFirstFrame() {
+                if (!hidden[0]) {
+                    hidden[0] = true;
+                    hideHistory.run();
+                }
+            }
+
+            @Override
+            public void onFinished() {
+                finish.run();
+            }
+
+            @Override
+            public void onFailed() {
+                finish.run();
+            }
+        });
+        return true;
+    }
+
+    public long getDialogId() {
                 return dialog_id;
             }
         };
@@ -12850,51 +12987,67 @@ public class ChatActivity extends BaseFragment implements
             topicsTabs.setAllTopicsHidden(true);
         }
 
+        final Runnable showUndo = () -> {
+            createUndoView();
+            if (undoView == null) {
+                return;
+            }
+            undoView.showWithAction(dialog_id, UndoView.ACTION_CLEAR, () -> {
+                if (!pinnedMessageIds.isEmpty()) {
+                    SharedPreferences preferences = MessagesController.getNotificationsSettings(currentAccount);
+                    preferences.edit().putInt("pin_" + dialog_id, pinnedMessageIds.get(0)).commit();
+                    pinnedMessageIds.clear();
+                    pinnedMessageObjects.clear();
+                    currentPinnedMessageId = 0;
+                    loadedPinnedMessagesCount = 0;
+                    totalPinnedMessagesCount = 0;
+                    updatePinnedMessageView(true);
+                }
+
+                if (ChatObject.isMonoForum(currentChat) && ChatObject.canManageMonoForum(currentAccount, currentChat)) {
+                    if (threadId != 0) {
+                        getMessagesStorage().removeTopic(-currentChat.id, threadId);
+                        getMessagesController().deleteSavedDialog(threadId, getMessagesController().getInputPeer(-currentChat.id));
+                        getMessagesController().getTopicsController().onTopicsDeletedServerSide(currentChat.id, threadId);
+                    }
+                } else {
+                    getMessagesController().deleteDialog(dialog_id, 1, revoke);
+                    getMessagesStorage().removeAllTopics(dialog_id);
+                    getMessagesController().getTopicsController().reloadTopics(-dialog_id);
+                }
+                setClearingHistory(threadId, false);
+                if (topicsTabs != null) {
+                    topicsTabs.setAllTopicsHidden(false);
+                }
+                if (threadId == getThreadId()) {
+                    clearHistory(false, null);
+                    chatAdapter.notifyDataSetChanged();
+                }
+            }, () -> {
+                setClearingHistory(threadId, false);
+                if (topicsTabs != null) {
+                    topicsTabs.setAllTopicsHidden(false);
+                }
+                if (threadId == getThreadId()) {
+                    chatAdapter.notifyDataSetChanged();
+                }
+            });
+        };
+        final Runnable hideHistory = () -> {
+            setClearingHistory(threadId, true);
+            if (chatAdapter != null) {
+                chatAdapter.notifyDataSetChanged();
+            }
+        };
+        if (startBlackHoleClear(hideHistory, showUndo)) {
+            return;
+        }
         setClearingHistory(threadId, true);
         createUndoView();
         if (undoView == null) {
             return;
         }
-        undoView.showWithAction(dialog_id, UndoView.ACTION_CLEAR, () -> {
-            if (!pinnedMessageIds.isEmpty()) {
-                SharedPreferences preferences = MessagesController.getNotificationsSettings(currentAccount);
-                preferences.edit().putInt("pin_" + dialog_id, pinnedMessageIds.get(0)).commit();
-                pinnedMessageIds.clear();
-                pinnedMessageObjects.clear();
-                currentPinnedMessageId = 0;
-                loadedPinnedMessagesCount = 0;
-                totalPinnedMessagesCount = 0;
-                updatePinnedMessageView(true);
-            }
-
-            if (ChatObject.isMonoForum(currentChat) && ChatObject.canManageMonoForum(currentAccount, currentChat)) {
-                if (threadId != 0) {
-                    getMessagesStorage().removeTopic(-currentChat.id, threadId);
-                    getMessagesController().deleteSavedDialog(threadId, getMessagesController().getInputPeer(-currentChat.id));
-                    getMessagesController().getTopicsController().onTopicsDeletedServerSide(currentChat.id, threadId);
-                }
-            } else {
-                getMessagesController().deleteDialog(dialog_id, 1, revoke);
-                getMessagesStorage().removeAllTopics(dialog_id);
-                getMessagesController().getTopicsController().reloadTopics(-dialog_id);
-            }
-            setClearingHistory(threadId, false);
-            if (topicsTabs != null) {
-                topicsTabs.setAllTopicsHidden(false);
-            }
-            if (threadId == getThreadId()) {
-                clearHistory(false, null);
-                chatAdapter.notifyDataSetChanged();
-            }
-        }, () -> {
-            setClearingHistory(threadId, false);
-            if (topicsTabs != null) {
-                topicsTabs.setAllTopicsHidden(false);
-            }
-            if (threadId == getThreadId()) {
-                chatAdapter.notifyDataSetChanged();
-            }
-        });
+        showUndo.run();
         chatAdapter.notifyDataSetChanged();
     }
 
