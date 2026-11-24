@@ -9,6 +9,8 @@ package com.exteragram.messenger.feed.ui;
 import static org.telegram.messenger.AndroidUtilities.dp;
 
 import android.content.Context;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.app.AlertDialog;
 import android.graphics.Typeface;
 import android.os.Bundle;
@@ -294,6 +296,13 @@ public class FeedActivity extends BaseFragment implements NotificationCenter.Not
         super.onFragmentDestroy();
     }
 
+    private void openMessage(MessageObject message) {
+        Bundle args = new Bundle();
+        args.putLong("dialog_id", message.getDialogId());
+        args.putInt("message_id", message.getRealId());
+        presentFragment(new ChatActivity(args));
+    }
+
     private final class FeedAdapter extends RecyclerView.Adapter<FeedHolder> {
         private final Context context;
         FeedAdapter(Context context) { this.context = context; }
@@ -320,11 +329,21 @@ public class FeedActivity extends BaseFragment implements NotificationCenter.Not
             CharSequence body = message.messageOwner != null ? message.messageOwner.message : "";
             if (body == null || body.length() == 0) body = "Media post";
             holder.text.setText(channelName + "\n\n" + body);
-            holder.text.setOnClickListener(v -> {
-                Bundle args = new Bundle();
-                args.putLong("dialog_id", message.getDialogId());
-                args.putInt("message_id", message.getRealId());
-                presentFragment(new ChatActivity(args));
+            holder.text.setOnClickListener(v -> openMessage(message));
+            holder.text.setOnLongClickListener(v -> {
+                new AlertDialog.Builder(getContext())
+                        .setItems(new String[]{"Open in chat", "Copy text"}, (dialog, which) -> {
+                            if (which == 0) {
+                                openMessage(message);
+                            } else {
+                                ClipboardManager clipboard = (ClipboardManager) getContext().getSystemService(Context.CLIPBOARD_SERVICE);
+                                if (clipboard != null) {
+                                    clipboard.setPrimaryClip(ClipData.newPlainText("Feed post", message.messageOwner != null ? message.messageOwner.message : ""));
+                                }
+                            }
+                        })
+                        .show();
+                return true;
             });
         }
 
