@@ -2603,7 +2603,8 @@ public class LocaleController {
     public static String formatDateOnline(long date, boolean[] madeShorter) {
         try {
             if (TrustedConfig.isRelativeLastSeen()) {
-                long elapsedSeconds = Math.max(0L, System.currentTimeMillis() / 1000L - date);
+                long now = ConnectionsManager.getInstance(UserConfig.selectedAccount).getCurrentTime();
+                long elapsedSeconds = Math.max(0L, now - date);
                 if (elapsedSeconds < 60L) {
                     return getString(R.string.LessMinuteAgo);
                 } else if (elapsedSeconds < 3600L) {
