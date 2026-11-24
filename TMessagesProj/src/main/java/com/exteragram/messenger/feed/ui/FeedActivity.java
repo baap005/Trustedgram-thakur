@@ -29,6 +29,7 @@ import com.exteragram.messenger.feed.FeedController;
 import com.exteragram.messenger.feed.FeedConfig;
 
 import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
@@ -53,13 +54,20 @@ public class FeedActivity extends BaseFragment implements NotificationCenter.Not
     private int classGuid;
     private int loadIndex;
     private boolean loadingRequested;
+    private final Runnable loadNewPosts = () -> {
+        if (controller != null && controller.hasResumedUi()) {
+            controller.loadNewer(classGuid, loadIndex++);
+        }
+    };
 
     @Override
     public boolean onFragmentCreate() {
         controller = FeedController.getInstance(currentAccount);
+        controller.activateSelectedTimeline();
         classGuid = org.telegram.tgnet.ConnectionsManager.generateClassGuid();
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.feedNeedReload);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.messagesDidLoad);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.didReceiveNewMessages);
         return super.onFragmentCreate();
     }
 
@@ -245,7 +253,12 @@ public class FeedActivity extends BaseFragment implements NotificationCenter.Not
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
         if (account != currentAccount) return;
-        if (id == NotificationCenter.feedNeedReload) {
+        if (id == NotificationCenter.didReceiveNewMessages) {
+            if (args.length > 2 && !(Boolean) args[2] && controller != null && controller.isIncludedChannelPost((Long) args[0])) {
+                AndroidUtilities.cancelRunOnUIThread(loadNewPosts);
+                AndroidUtilities.runOnUIThread(loadNewPosts, 1000);
+            }
+        } else if (id == NotificationCenter.feedNeedReload) {
             loadingRequested = false;
             refresh();
         } else if (id == NotificationCenter.messagesDidLoad) {
@@ -260,6 +273,8 @@ public class FeedActivity extends BaseFragment implements NotificationCenter.Not
     public void onFragmentDestroy() {
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.feedNeedReload);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.messagesDidLoad);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.didReceiveNewMessages);
+        AndroidUtilities.cancelRunOnUIThread(loadNewPosts);
         if (controller != null) {
             controller.setUiResumed(false);
             controller.setUiActive(false);
