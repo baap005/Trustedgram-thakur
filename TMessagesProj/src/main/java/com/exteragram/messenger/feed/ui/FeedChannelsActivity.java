@@ -56,7 +56,7 @@ public class FeedChannelsActivity extends BaseFragment {
         ScrollView scroll = new ScrollView(context);
         rows = new LinearLayout(context);
         rows.setOrientation(LinearLayout.VERTICAL);
-        scroll.addView(rows, new ScrollView.LayoutParams(ScrollView.LayoutParams.MATCH_PARENT, ScrollView.ViewGroup.LayoutParams.WRAP_CONTENT));
+        scroll.addView(rows, new ScrollView.LayoutParams(ScrollView.LayoutParams.MATCH_PARENT, ScrollView.LinearLayout.LayoutParams.WRAP_CONTENT));
         root.addView(scroll, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f));
 
         fragmentView = root;
