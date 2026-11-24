@@ -300,7 +300,7 @@ public class FeedActivity extends BaseFragment implements NotificationCenter.Not
 
         @Override
         public void onBindViewHolder(@NonNull FeedHolder holder, int position) {
-            ArrayList<MessageObject> messages = controller.getMessages();
+            ArrayList<MessageObject> messages = controller.getStore().getVisibleMessages();
             if (position < 0 || position >= messages.size()) return;
             MessageObject message = messages.get(position);
             TLRPC.Chat channel = MessagesController.getInstance(currentAccount).getChat((int) -message.getDialogId());
@@ -318,7 +318,7 @@ public class FeedActivity extends BaseFragment implements NotificationCenter.Not
 
         @Override
         public int getItemCount() {
-            return controller == null ? 0 : controller.getMessages().size();
+            return controller == null ? 0 : controller.getStore().getVisibleMessages().size();
         }
     }
 
