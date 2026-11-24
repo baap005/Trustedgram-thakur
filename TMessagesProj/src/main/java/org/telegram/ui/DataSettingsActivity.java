@@ -174,10 +174,10 @@ public class DataSettingsActivity extends BaseFragment {
         saveToGalleryChannelsRow = rowCount++;
         saveToGalleryDividerRow = rowCount++;
 
-//        autoplayHeaderRow = rowCount++;
-//        autoplayGifsRow = rowCount++;
-//        autoplayVideoRow = rowCount++;
-//        autoplaySectionRow = rowCount++;
+        autoplayHeaderRow = rowCount++;
+        autoplayGifsRow = rowCount++;
+        autoplayVideoRow = rowCount++;
+        autoplaySectionRow = rowCount++;
         streamSectionRow = rowCount++;
         enableStreamRow = rowCount++;
         if (BuildVars.DEBUG_VERSION) {
