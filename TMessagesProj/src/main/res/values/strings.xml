@@ -2711,8 +2711,6 @@
     <string name="Streaming">Streaming</string>
     <string name="EnableStreaming">Stream Videos and Audio Files</string>
     <string name="CacheStreamedMedia">Cache streamed media</string>
-    <string name="CenterActionBarTitles">Center action bar titles</string>
-    <string name="CenterActionBarTitlesInfo">Align screen titles to the center of the top bar.</string>
     <string name="EnableAllStreamingInfo">Some videos can\'t be streamed – e.g., all videos that were sent from Android using Telegram 4.7 and earlier versions.\n</string>
     <string name="TapToChangePhone">Tap to change phone number</string>
     <string name="ShowNotificationsFor">Show notifications for</string>
