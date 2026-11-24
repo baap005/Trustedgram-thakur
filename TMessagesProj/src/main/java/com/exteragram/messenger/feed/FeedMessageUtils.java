@@ -128,7 +128,7 @@ public final class FeedMessageUtils {
     }
 
     public static int getPlaybackScrollMessageId(boolean feedSearch, long dialogId, MessageObject messageObject) {
-        if (messageObject != null && messageObject.searchType == ChatActivity.SEARCH_FEED && !feedSearch && messageObject.getDialogId() == dialogId) {
+        if (messageObject != null && messageObject.searchType == ChatActivity.SEARCH_PUBLIC_POSTS && !feedSearch && messageObject.getDialogId() == dialogId) {
             return messageObject.getRealId();
         }
         return messageObject != null ? messageObject.getId() : 0;
@@ -168,7 +168,7 @@ public final class FeedMessageUtils {
         msg.id = old.getId();
         msg.realId = old.getRealId();
         msg.dialog_id = old.getDialogId();
-        MessageObject replacement = new MessageObject(currentAccount, msg, old.replyMessageObject, null, null, null, null, true, true, 0, false, false, false, ChatActivity.SEARCH_FEED);
+        MessageObject replacement = new MessageObject(currentAccount, msg, old.replyMessageObject, null, null, null, null, true, true, 0, false, false, false, ChatActivity.SEARCH_PUBLIC_POSTS);
         replacement.isPrimaryGroupMessage = old.isPrimaryGroupMessage;
         replacement.localGroupId = old.localGroupId;
         replacement.copyStableParams(old);
