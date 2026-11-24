@@ -9,12 +9,14 @@ package com.exteragram.messenger.feed.ui;
 import static org.telegram.messenger.AndroidUtilities.dp;
 
 import android.content.Context;
+import android.app.AlertDialog;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
+import android.widget.EditText;
 import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -146,6 +148,45 @@ public class FeedActivity extends BaseFragment implements NotificationCenter.Not
         for (FeedConfig.Category category : config.getVisibleCategories()) {
             addCategoryButton(category.title, category.id, config.getSelectedCategoryId() == category.id);
         }
+        addCreateCategoryButton();
+    }
+
+    private void addCreateCategoryButton() {
+        TextView add = new TextView(getContext());
+        add.setText("+");
+        add.setTextSize(20);
+        add.setGravity(Gravity.CENTER);
+        add.setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton));
+        add.setBackground(Theme.createRoundRectDrawable(dp(18), Theme.getColor(Theme.key_windowBackgroundWhite)));
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(dp(38), dp(34));
+        categoryStrip.addView(add, lp);
+        add.setOnClickListener(v -> {
+            EditText input = new EditText(getContext());
+            input.setSingleLine(true);
+            input.setHint("Category name");
+            new AlertDialog.Builder(getContext())
+                    .setTitle("New feed category")
+                    .setView(input)
+                    .setNegativeButton("Cancel", null)
+                    .setPositiveButton("Create", (dialog, which) -> {
+                        String name = input.getText().toString().trim();
+                        if (name.isEmpty()) return;
+                        controller.loadChannels((channels, includedCount, failed, snapshot) -> {
+                            if (failed || channels == null) return;
+                            java.util.HashSet<Long> ids = new java.util.HashSet<>();
+                            FeedConfig cfg = FeedConfig.getInstance(currentAccount);
+                            for (org.telegram.tgnet.TLRPC.Chat chat : channels) {
+                                long dialogId = -chat.id;
+                                if (!cfg.isExcluded(dialogId)) ids.add(dialogId);
+                            }
+                            FeedConfig.Category category = cfg.saveCategory(0, name, 0, ids);
+                            controller.selectCategory(category.id);
+                            updateCategoryTabs();
+                            refresh();
+                        });
+                    })
+                    .show();
+        });
     }
 
     private void addCategoryButton(String label, int categoryId, boolean selected) {
