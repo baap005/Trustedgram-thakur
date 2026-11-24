@@ -112,6 +112,14 @@ public class TrustedConfig {
         prefs().edit().putBoolean("relative_last_seen", value).apply();
     }
 
+    public static boolean isTimeWithSeconds() {
+        return prefs().getBoolean("time_with_seconds", false);
+    }
+
+    public static void setTimeWithSeconds(boolean value) {
+        prefs().edit().putBoolean("time_with_seconds", value).apply();
+    }
+
     public static boolean isHideStories() {
         return prefs().getBoolean("hide_stories", false);
     }
