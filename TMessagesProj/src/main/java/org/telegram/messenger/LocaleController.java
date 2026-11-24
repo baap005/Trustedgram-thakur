@@ -2599,6 +2599,18 @@ public class LocaleController {
 
     public static String formatDateOnline(long date, boolean[] madeShorter) {
         try {
+            if (TrustedConfig.isRelativeLastSeen()) {
+                long elapsedSeconds = Math.max(0L, System.currentTimeMillis() / 1000L - date);
+                if (elapsedSeconds < 60L) {
+                    return getString(R.string.LessMinuteAgo);
+                } else if (elapsedSeconds < 3600L) {
+                    int minutes = (int) (elapsedSeconds / 60L);
+                    return formatPluralString("MinutesAgo", minutes);
+                } else if (elapsedSeconds < 86400L) {
+                    int hours = (int) (elapsedSeconds / 3600L);
+                    return formatPluralString("HoursAgo", hours);
+                }
+            }
             date *= 1000;
             Calendar rightNow = Calendar.getInstance();
             int day = rightNow.get(Calendar.DAY_OF_YEAR);
