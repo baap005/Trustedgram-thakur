@@ -53,6 +53,21 @@ public class FeedChannelsActivity extends BaseFragment {
         hint.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
         root.addView(hint, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 12));
 
+        TextView archived = new TextView(context);
+        archived.setText("Include archived channels: " + (config.isIncludeArchived() ? "On" : "Off"));
+        archived.setTextSize(14);
+        archived.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        archived.setPadding(dp(12), dp(12), dp(12), dp(12));
+        archived.setBackground(Theme.createRoundRectDrawable(dp(12), Theme.getColor(Theme.key_windowBackgroundWhite)));
+        root.addView(archived, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 10, 0, 10));
+        archived.setOnClickListener(v -> {
+            boolean enabled = !config.isIncludeArchived();
+            config.setIncludeArchived(enabled);
+            archived.setText("Include archived channels: " + (enabled ? "On" : "Off"));
+            controller.applyConfigChange(null);
+            loadChannels();
+        });
+
         ScrollView scroll = new ScrollView(context);
         rows = new LinearLayout(context);
         rows.setOrientation(LinearLayout.VERTICAL);
