@@ -588,7 +588,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         String creditText = version + "\nBased on exteraGram · GPL-3.0-or-later";
         SpannableString credit = new SpannableString(creditText);
         int creditStart = creditText.indexOf("exteraGram");
-        credit.setSpan(new URLSpan("https://github.com/exteraSquad/exteraGram"), creditStart, creditText.length(), android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        credit.setSpan(new URLSpan("https://github.com/exteraSquad/exteraGram"), creditStart, creditStart + "exteraGram".length(), android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         versionView.setText(credit);
     }
 
