@@ -326,7 +326,7 @@ public class FeedActivity extends BaseFragment implements NotificationCenter.Not
             MessageObject message = messages.get(position);
             TLRPC.Chat channel = MessagesController.getInstance(currentAccount).getChat((int) -message.getDialogId());
             String channelName = channel != null ? channel.title : "Channel";
-            CharSequence body = message.messageOwner != null ? message.messageOwner.message : "";
+            CharSequence body = message.messageOwner != null && message.messageOwner.message != null ? message.messageOwner.message : "";
             if (body == null || body.length() == 0) body = "Media post";
             holder.text.setText(channelName + "\n\n" + body);
             holder.text.setOnClickListener(v -> openMessage(message));
