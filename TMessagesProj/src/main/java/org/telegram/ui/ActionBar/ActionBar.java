@@ -183,6 +183,7 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
     public ActionBar(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context);
         this.resourcesProvider = resourcesProvider;
+        isCenterTitle = SharedConfig.centerActionBarTitles;
         setOnClickListener(v -> {
             if (isSearchFieldVisible()) {
                 return;
