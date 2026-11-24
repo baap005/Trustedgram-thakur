@@ -72,7 +72,7 @@ public class FeedChannelsActivity extends BaseFragment {
         ScrollView scroll = new ScrollView(context);
         rows = new LinearLayout(context);
         rows.setOrientation(LinearLayout.VERTICAL);
-        scroll.addView(rows, new ScrollView.LayoutParams(ScrollView.LayoutParams.MATCH_PARENT, ScrollView.LinearLayout.LayoutParams.WRAP_CONTENT));
+        scroll.addView(rows, new ScrollView.LayoutParams(ScrollView.LayoutParams.MATCH_PARENT, ScrollView.LayoutParams.WRAP_CONTENT));
         root.addView(scroll, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f));
 
         fragmentView = root;
@@ -126,7 +126,7 @@ public class FeedChannelsActivity extends BaseFragment {
         row.setGravity(Gravity.CENTER_VERTICAL);
         row.setPadding(dp(16), dp(13), dp(16), dp(13));
         row.setBackground(Theme.createRoundRectDrawable(dp(14), Theme.getColor(Theme.key_windowBackgroundWhite)));
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
         lp.bottomMargin = dp(7);
         rows.addView(row, lp);
         row.setOnClickListener(v -> {
