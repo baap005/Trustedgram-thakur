@@ -192,7 +192,7 @@ public class DataSettingsActivity extends BaseFragment {
         enableCacheStreamRow = -1;//rowCount++;
         callsSectionRow = rowCount++;
         useLessDataForCallsRow = rowCount++;
-//        quickRepliesRow = rowCount++;
+        quickRepliesRow = rowCount++;
         callsSection2Row = rowCount++;
         proxySectionRow = rowCount++;
         proxyRow = rowCount++;
