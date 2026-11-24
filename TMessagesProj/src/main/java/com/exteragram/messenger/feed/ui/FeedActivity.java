@@ -86,14 +86,14 @@ public class FeedActivity extends BaseFragment implements NotificationCenter.Not
         manage.setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton));
         manage.setPadding(dp(12), dp(8), dp(12), dp(8));
         manage.setOnClickListener(v -> presentFragment(new FeedChannelsActivity()));
-        header.addView(manage, new LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
+        header.addView(manage, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         content.addView(header, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 44, Gravity.TOP));
 
         HorizontalScrollView categoriesScroll = new HorizontalScrollView(context);
         categoriesScroll.setHorizontalScrollBarEnabled(false);
         categoryStrip = new LinearLayout(context);
         categoryStrip.setOrientation(LinearLayout.HORIZONTAL);
-        categoriesScroll.addView(categoryStrip, new HorizontalScrollView.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
+        categoriesScroll.addView(categoryStrip, new HorizontalScrollView.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         content.addView(categoriesScroll, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 40, Gravity.TOP));
         updateCategoryTabs();
 
@@ -156,7 +156,7 @@ public class FeedActivity extends BaseFragment implements NotificationCenter.Not
         button.setPadding(dp(14), dp(7), dp(14), dp(7));
         button.setTextColor(Theme.getColor(selected ? Theme.key_featuredStickers_addButton : Theme.key_windowBackgroundWhiteBlackText));
         button.setBackground(Theme.createRoundRectDrawable(dp(18), Theme.getColor(selected ? Theme.key_windowBackgroundWhite : Theme.key_windowBackgroundGray)));
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, dp(34));
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(34));
         lp.rightMargin = dp(7);
         categoryStrip.addView(button, lp);
         button.setOnClickListener(v -> {
