@@ -13,6 +13,7 @@ import android.app.AlertDialog;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
@@ -37,6 +38,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ChatActivity;
+import org.telegram.ui.MainTabsActivity;
 import org.telegram.ui.Components.LayoutHelper;
 
 import java.util.ArrayList;
@@ -45,7 +47,7 @@ import java.util.ArrayList;
  * Feed tab host. FeedController builds a merged, locally cached timeline from
  * subscribed channels; tapping a post opens its original channel message.
  */
-public class FeedActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
+public class FeedActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, MainTabsActivity.TabFragmentDelegate {
 
     private FeedController controller;
     private RecyclerView listView;
@@ -59,6 +61,16 @@ public class FeedActivity extends BaseFragment implements NotificationCenter.Not
             controller.loadNewer(classGuid, loadIndex++);
         }
     };
+
+    @Override
+    public boolean canParentTabsSlide(MotionEvent ev, boolean forward) {
+        return true;
+    }
+
+    @Override
+    public void onParentScrollToTop() {
+        if (listView != null) listView.smoothScrollToPosition(0);
+    }
 
     @Override
     public boolean onFragmentCreate() {
