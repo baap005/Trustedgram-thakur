@@ -1326,6 +1326,12 @@ public class SharedConfig {
         MediaDataController.getInstance(UserConfig.selectedAccount).buildShortcuts();
     }
 
+    public static void toggleCenterActionBarTitles() {
+        centerActionBarTitles = !centerActionBarTitles;
+        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+        preferences.edit().putBoolean("centerActionBarTitles", centerActionBarTitles).apply();
+    }
+
     public static void toggleStreamMedia() {
         streamMedia = !streamMedia;
         SharedPreferences preferences = MessagesController.getGlobalMainSettings();
