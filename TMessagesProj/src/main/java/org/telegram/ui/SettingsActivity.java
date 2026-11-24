@@ -918,11 +918,6 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 UserSelectorBottomSheet.open(0, BirthdayController.getInstance(UserConfig.selectedAccount).getState());
                 break;
 
-            case 91:
-                SharedConfig.toggleCenterActionBarTitles();
-                actionBar.setCenterTitleEnabled(SharedConfig.centerActionBarTitles);
-                listView.adapter.update(true);
-                break;
             case 90:
                 presentFragment(new TGramMainActivity());
                 break;
