@@ -1044,7 +1044,7 @@ public class FeedController implements NotificationCenter.NotificationCenterDele
         }
         ArrayList<MessageObject> messageObjects = new ArrayList<>(loadedMessages.size());
         for (TLRPC.Message msg : loadedMessages) {
-            messageObjects.add(new MessageObject(currentAccount, msg, null, usersDict, chatsDict, null, null, true, true, 0, false, false, false, ChatActivity.SEARCH_FEED));
+            messageObjects.add(new MessageObject(currentAccount, msg, null, usersDict, chatsDict, null, null, true, true, 0, false, false, false, ChatActivity.SEARCH_PUBLIC_POSTS));
         }
         return messageObjects;
     }
