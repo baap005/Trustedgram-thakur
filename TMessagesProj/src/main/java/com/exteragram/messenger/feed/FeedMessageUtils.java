@@ -40,7 +40,7 @@ public final class FeedMessageUtils {
     public static TLRPC.Chat resolveDisplayChannel(MessageObject messageObject) {
         if (messageObject == null
                 || messageObject.messageOwner == null
-                || messageObject.searchType != ChatActivity.SEARCH_FEED
+                || messageObject.searchType != ChatActivity.SEARCH_PUBLIC_POSTS
                 || messageObject.preview
                 || messageObject.isSponsored()
                 || messageObject.type == MessageObject.TYPE_JOINED_CHANNEL
@@ -187,16 +187,7 @@ public final class FeedMessageUtils {
     }
 
     public static boolean isAllowedFeedOption(int option) {
-        return switch (option) {
-            case ChatActivity.OPTION_REPLY, ChatActivity.OPTION_FORWARD, ChatActivity.OPTION_COPY, ChatActivity.OPTION_COPY_LINK,
-                 ChatActivity.OPTION_COPY_PHONE_NUMBER, ChatActivity.OPTION_COPY_PHOTO, ChatActivity.OPTION_SAVE_MESSAGE,
-                 ChatActivity.OPTION_SAVE_TO_GALLERY, ChatActivity.OPTION_SAVE_TO_GALLERY2, ChatActivity.OPTION_GENERATE,
-                 ChatActivity.OPTION_SAVE_TO_DOWNLOADS_OR_MUSIC, ChatActivity.OPTION_SHARE,
-                 ChatActivity.OPTION_OPEN_IN_EXTERNAL_APP, ChatActivity.OPTION_TRANSLATE,
-                 ChatActivity.OPTION_STATISTICS, ChatActivity.OPTION_UNVOTE,
-                 ChatActivity.OPTION_VIEW_STATISTICS -> true;
-            default -> false;
-        };
+        return false;
     }
 
     public static boolean isAllowedDoubleTapAction(int action) {
