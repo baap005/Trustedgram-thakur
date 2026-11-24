@@ -850,7 +850,7 @@ public class FeedController implements NotificationCenter.NotificationCenterDele
     }
 
     private void postFeedResults(int guid, int loadIndex, ArrayList<MessageObject> messages, int loadType, boolean hasMoreNewer, boolean failed) {
-        NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.messagesDidLoad, 0L, messages.size(), messages, false, 0, 0, 0, 0, loadType, true, guid, loadIndex, 0, 0, ChatActivity.MODE_SEARCH, hasMoreNewer, failed);
+        NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.messagesDidLoad, 0L, messages.size(), messages, false, 0, 0, 0, 0, loadType, true, guid, loadIndex, 0, 0, 0, hasMoreNewer, failed);
     }
 
     private void postFeedCount(int guid) {
