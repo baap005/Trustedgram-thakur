@@ -753,7 +753,7 @@ public class DataSettingsActivity extends BaseFragment {
                     if (position == enableStreamRow) {
                         checkCell.setTextAndCheck(LocaleController.getString(R.string.EnableStreaming), SharedConfig.streamMedia, enableAllStreamRow != -1);
                     } else if (position == enableCacheStreamRow) {
-                        checkCell.setTextAndCheck("Cache streamed media", SharedConfig.saveStreamMedia, true);
+                        checkCell.setTextAndCheck(LocaleController.getString(R.string.CacheStreamedMedia), SharedConfig.saveStreamMedia, true);
                     } else if (position == enableMkvRow) {
                         checkCell.setTextAndCheck("(beta only) Show MKV as Video", SharedConfig.streamMkv, true);
                     } else if (position == enableAllStreamRow) {
