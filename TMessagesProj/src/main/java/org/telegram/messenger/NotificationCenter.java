@@ -287,6 +287,7 @@ public class NotificationCenter {
     public static final int updatedChatbot = totalEvents++;
     public static final int walletUpdate = totalEvents++;
     public static final int walletTransactionsUpdate = totalEvents++;
+    public static final int feedNeedReload = totalEvents++;
 
     //global
     public static final int activeAccountChanged = totalEvents++;
