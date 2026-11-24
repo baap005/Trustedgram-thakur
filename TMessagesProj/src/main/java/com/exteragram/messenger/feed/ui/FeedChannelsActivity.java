@@ -135,7 +135,7 @@ public class FeedChannelsActivity extends BaseFragment {
                 HashSet<Long> channels = new HashSet<>(selectedCategory.getChannels());
                 nextIncluded = !channels.contains(dialogId);
                 if (nextIncluded) channels.add(dialogId); else channels.remove(dialogId);
-                config.saveCategory(selectedCategory.id, selectedCategory.title, selectedCategory.emojiId, channels);
+                config.saveCategory(selectedCategory.getId(), selectedCategory.getTitle(), selectedCategory.getEmojiId(), channels);
             } else {
                 nextIncluded = config.isExcluded(dialogId);
                 config.setExcluded(dialogId, !nextIncluded);
