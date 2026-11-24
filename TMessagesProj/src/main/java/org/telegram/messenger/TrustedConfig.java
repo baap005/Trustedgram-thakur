@@ -103,6 +103,15 @@ public class TrustedConfig {
         prefs().edit().putInt("id_dc_mode", mode).apply();
     }
 
+    /** Display recent activity as an elapsed duration instead of a clock time. */
+    public static boolean isRelativeLastSeen() {
+        return prefs().getBoolean("relative_last_seen", false);
+    }
+
+    public static void setRelativeLastSeen(boolean value) {
+        prefs().edit().putBoolean("relative_last_seen", value).apply();
+    }
+
     public static boolean isHideStories() {
         return prefs().getBoolean("hide_stories", false);
     }
