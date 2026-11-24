@@ -154,7 +154,7 @@ public class FeedActivity extends BaseFragment implements NotificationCenter.Not
         FeedConfig config = FeedConfig.getInstance(currentAccount);
         addCategoryButton("All", 0, config.getSelectedCategoryId() == 0);
         for (FeedConfig.Category category : config.getVisibleCategories()) {
-            addCategoryButton(category.title, category.id, config.getSelectedCategoryId() == category.id);
+            addCategoryButton(category.getTitle(), category.getId(), config.getSelectedCategoryId() == category.getId());
         }
         addCreateCategoryButton();
     }
@@ -188,7 +188,7 @@ public class FeedActivity extends BaseFragment implements NotificationCenter.Not
                                 if (!cfg.isExcluded(dialogId)) ids.add(dialogId);
                             }
                             FeedConfig.Category category = cfg.saveCategory(0, name, 0, ids);
-                            controller.selectCategory(category.id);
+                            controller.selectCategory(category.getId());
                             updateCategoryTabs();
                             refresh();
                         });
