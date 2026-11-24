@@ -206,6 +206,22 @@ public class FeedActivity extends BaseFragment implements NotificationCenter.Not
                 refresh();
             }
         });
+        if (categoryId > 0) {
+            button.setOnLongClickListener(v -> {
+                new AlertDialog.Builder(getContext())
+                        .setTitle("Delete category?")
+                        .setMessage("This removes the category only. Your channel subscriptions stay unchanged.")
+                        .setNegativeButton("Cancel", null)
+                        .setPositiveButton("Delete", (dialog, which) -> {
+                            FeedConfig.getInstance(currentAccount).deleteCategory(categoryId);
+                            controller.applyConfigChange(null);
+                            updateCategoryTabs();
+                            refresh();
+                        })
+                        .show();
+                return true;
+            });
+        }
     }
 
     private void refresh() {
