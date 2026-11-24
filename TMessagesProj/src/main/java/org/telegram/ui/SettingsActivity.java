@@ -41,6 +41,9 @@ import android.media.MediaCodecList;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.text.SpannableString;
+import android.text.method.LinkMovementMethod;
+import android.text.style.URLSpan;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -515,17 +518,11 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         versionView.setPadding(dp(21), dp(10), dp(21), dp(10));
         versionView.setGravity(Gravity.CENTER);
         versionView.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), Theme.RIPPLE_MASK_ALL));
-        versionView.setOnClickListener(v -> {
-            versionViewPressCount++;
-            if (versionViewPressCount < 2 && !BuildVars.DEBUG_PRIVATE_VERSION) {
-                try {
-                    Toast.makeText(getParentActivity(), getString(R.string.DebugMenuLongPress), Toast.LENGTH_SHORT).show();
-                } catch (Exception e) {
-                    FileLog.e(e);
-                }
-                return;
-            }
+        versionView.setMovementMethod(LinkMovementMethod.getInstance());
+        versionView.setLinksClickable(true);
+        versionView.setOnLongClickListener(v -> {
             openDebugMenu();
+            return true;
         });
 
         navigationBar = new View(context);
@@ -587,7 +584,12 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         }
         subtitleView.setText(sb);
 
-        versionView.setText(getVersionName());
+        String version = getVersionName();
+        String creditText = version + "\\nBased on exteraGram";
+        SpannableString credit = new SpannableString(creditText);
+        int creditStart = creditText.indexOf("exteraGram");
+        credit.setSpan(new URLSpan("https://github.com/exteraSquad/exteraGram"), creditStart, creditText.length(), android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        versionView.setText(credit);
     }
 
 
