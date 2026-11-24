@@ -632,6 +632,7 @@ public class SharedConfig {
             if (useSystemBoldFont) {
                 AndroidUtilities.mediumTypeface = null;
             }
+            centerActionBarTitles = preferences.getBoolean("centerActionBarTitles", false);
             streamMedia = preferences.getBoolean("streamMedia", true);
             saveStreamMedia = preferences.getBoolean("saveStreamMedia", true);
             pauseMusicOnRecord = preferences.getBoolean("pauseMusicOnRecord", true);
