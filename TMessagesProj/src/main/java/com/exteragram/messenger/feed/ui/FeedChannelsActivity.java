@@ -23,6 +23,7 @@ import com.exteragram.messenger.feed.FeedConfig;
 import com.exteragram.messenger.feed.FeedController;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 
 public class FeedChannelsActivity extends BaseFragment {
 
@@ -115,7 +116,9 @@ public class FeedChannelsActivity extends BaseFragment {
 
     private void addChannelRow(TLRPC.Chat chat) {
         long dialogId = -chat.id;
-        boolean included = !config.isExcluded(dialogId);
+        int selectedCategoryId = config.getSelectedCategoryId();
+        FeedConfig.Category selectedCategory = selectedCategoryId > 0 ? config.getCategory(selectedCategoryId) : null;
+        boolean included = selectedCategory != null ? selectedCategory.getChannels().contains(dialogId) : !config.isExcluded(dialogId);
         TextView row = new TextView(getContext());
         row.setText((included ? "✓  " : "○  ") + chat.title);
         row.setTextSize(16);
@@ -127,8 +130,16 @@ public class FeedChannelsActivity extends BaseFragment {
         lp.bottomMargin = dp(7);
         rows.addView(row, lp);
         row.setOnClickListener(v -> {
-            boolean nextIncluded = config.isExcluded(dialogId);
-            config.setExcluded(dialogId, !nextIncluded);
+            boolean nextIncluded;
+            if (selectedCategory != null) {
+                HashSet<Long> channels = new HashSet<>(selectedCategory.getChannels());
+                nextIncluded = !channels.contains(dialogId);
+                if (nextIncluded) channels.add(dialogId); else channels.remove(dialogId);
+                config.saveCategory(selectedCategory.id, selectedCategory.title, selectedCategory.emojiId, channels);
+            } else {
+                nextIncluded = config.isExcluded(dialogId);
+                config.setExcluded(dialogId, !nextIncluded);
+            }
             row.setText((nextIncluded ? "✓  " : "○  ") + chat.title);
             controller.applyConfigChange(null);
         });
