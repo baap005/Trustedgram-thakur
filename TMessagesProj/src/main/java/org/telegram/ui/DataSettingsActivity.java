@@ -189,7 +189,7 @@ public class DataSettingsActivity extends BaseFragment {
         }
         enableAllStreamInfoRow = rowCount++;
 
-        enableCacheStreamRow = -1;//rowCount++;
+        enableCacheStreamRow = rowCount++;
         callsSectionRow = rowCount++;
         useLessDataForCallsRow = rowCount++;
         quickRepliesRow = rowCount++;
@@ -753,7 +753,7 @@ public class DataSettingsActivity extends BaseFragment {
                     if (position == enableStreamRow) {
                         checkCell.setTextAndCheck(LocaleController.getString(R.string.EnableStreaming), SharedConfig.streamMedia, enableAllStreamRow != -1);
                     } else if (position == enableCacheStreamRow) {
-                        //checkCell.setTextAndCheck(LocaleController.getString(R.string.CacheStreamFile), SharedConfig.saveStreamMedia, true);
+                        checkCell.setTextAndCheck("Cache streamed media", SharedConfig.saveStreamMedia, true);
                     } else if (position == enableMkvRow) {
                         checkCell.setTextAndCheck("(beta only) Show MKV as Video", SharedConfig.streamMkv, true);
                     } else if (position == enableAllStreamRow) {
