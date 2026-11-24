@@ -71,7 +71,7 @@ public class FeedActivity extends BaseFragment implements NotificationCenter.Not
         title.setText("Feed");
         title.setTextSize(25);
         title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
-        title.setTextColor(Theme.getColor(Theme.key_windowTextBlack));
+        title.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         title.setGravity(Gravity.CENTER_VERTICAL);
         content.addView(title, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 44, Gravity.TOP));
 
