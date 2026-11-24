@@ -15,6 +15,7 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
+import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -23,6 +24,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.exteragram.messenger.feed.FeedController;
+import com.exteragram.messenger.feed.FeedConfig;
 
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
@@ -44,6 +46,7 @@ public class FeedActivity extends BaseFragment implements NotificationCenter.Not
 
     private FeedController controller;
     private RecyclerView listView;
+    private LinearLayout categoryStrip;
     private FeedAdapter adapter;
     private int classGuid;
     private int loadIndex;
@@ -67,13 +70,32 @@ public class FeedActivity extends BaseFragment implements NotificationCenter.Not
         content.setOrientation(LinearLayout.VERTICAL);
         content.setPadding(dp(12), dp(12), dp(12), dp(8));
 
+        LinearLayout header = new LinearLayout(context);
+        header.setOrientation(LinearLayout.HORIZONTAL);
+        header.setGravity(Gravity.CENTER_VERTICAL);
         TextView title = new TextView(context);
         title.setText("Feed");
         title.setTextSize(25);
         title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         title.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         title.setGravity(Gravity.CENTER_VERTICAL);
-        content.addView(title, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 44, Gravity.TOP));
+        header.addView(title, new LinearLayout.LayoutParams(0, dp(44), 1f));
+        TextView manage = new TextView(context);
+        manage.setText("Channels");
+        manage.setTextSize(14);
+        manage.setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton));
+        manage.setPadding(dp(12), dp(8), dp(12), dp(8));
+        manage.setOnClickListener(v -> presentFragment(new FeedChannelsActivity()));
+        header.addView(manage, new LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
+        content.addView(header, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 44, Gravity.TOP));
+
+        HorizontalScrollView categoriesScroll = new HorizontalScrollView(context);
+        categoriesScroll.setHorizontalScrollBarEnabled(false);
+        categoryStrip = new LinearLayout(context);
+        categoryStrip.setOrientation(LinearLayout.HORIZONTAL);
+        categoriesScroll.addView(categoryStrip, new HorizontalScrollView.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
+        content.addView(categoriesScroll, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 40, Gravity.TOP));
+        updateCategoryTabs();
 
         listView = new RecyclerView(context);
         listView.setLayoutManager(new LinearLayoutManager(context));
@@ -116,8 +138,38 @@ public class FeedActivity extends BaseFragment implements NotificationCenter.Not
         super.onPause();
     }
 
+    private void updateCategoryTabs() {
+        if (categoryStrip == null || controller == null) return;
+        categoryStrip.removeAllViews();
+        FeedConfig config = FeedConfig.getInstance(currentAccount);
+        addCategoryButton("All", 0, config.getSelectedCategoryId() == 0);
+        for (FeedConfig.Category category : config.getVisibleCategories()) {
+            addCategoryButton(category.title, category.id, config.getSelectedCategoryId() == category.id);
+        }
+    }
+
+    private void addCategoryButton(String label, int categoryId, boolean selected) {
+        TextView button = new TextView(getContext());
+        button.setText(label);
+        button.setTextSize(13);
+        button.setGravity(Gravity.CENTER);
+        button.setPadding(dp(14), dp(7), dp(14), dp(7));
+        button.setTextColor(Theme.getColor(selected ? Theme.key_featuredStickers_addButton : Theme.key_windowBackgroundWhiteBlackText));
+        button.setBackground(Theme.createRoundRectDrawable(dp(18), Theme.getColor(selected ? Theme.key_windowBackgroundWhite : Theme.key_windowBackgroundGray)));
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, dp(34));
+        lp.rightMargin = dp(7);
+        categoryStrip.addView(button, lp);
+        button.setOnClickListener(v -> {
+            if (controller != null && controller.selectCategory(categoryId)) {
+                updateCategoryTabs();
+                refresh();
+            }
+        });
+    }
+
     private void refresh() {
         if (controller == null || listView == null) return;
+        updateCategoryTabs();
         adapter.notifyDataSetChanged();
         if (!loadingRequested && controller.getMessages().isEmpty()) {
             loadingRequested = true;
