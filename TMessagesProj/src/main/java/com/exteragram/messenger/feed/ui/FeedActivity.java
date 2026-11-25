@@ -133,6 +133,7 @@ public class FeedActivity extends BaseFragment implements NotificationCenter.Not
             public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
                 super.onScrolled(recyclerView, dx, dy);
                 LinearLayoutManager manager = (LinearLayoutManager) recyclerView.getLayoutManager();
+                markVisiblePostsRead();
                 if (manager != null && manager.findLastVisibleItemPosition() >= adapter.getItemCount() - 4) {
                     loadMore();
                 }
@@ -151,6 +152,7 @@ public class FeedActivity extends BaseFragment implements NotificationCenter.Not
             controller.setUiActive(true);
             controller.setUiResumed(true);
             refresh();
+            markVisiblePostsRead();
         }
     }
 
@@ -161,6 +163,20 @@ public class FeedActivity extends BaseFragment implements NotificationCenter.Not
             controller.setUiActive(false);
         }
         super.onPause();
+    }
+
+    private void markVisiblePostsRead() {
+        if (controller == null || listView == null || adapter == null) return;
+        RecyclerView.LayoutManager layoutManager = listView.getLayoutManager();
+        if (!(layoutManager instanceof LinearLayoutManager)) return;
+        LinearLayoutManager manager = (LinearLayoutManager) layoutManager;
+        int first = manager.findFirstVisibleItemPosition();
+        int last = manager.findLastVisibleItemPosition();
+        ArrayList<MessageObject> messages = controller.getStore().getVisibleMessages();
+        for (int i = Math.max(0, first); i <= last && i < messages.size(); i++) {
+            MessageObject message = messages.get(i);
+            if (message != null) controller.onPostSeen(message);
+        }
     }
 
     private void updateCategoryTabs() {
