@@ -79,6 +79,7 @@ import org.telegram.ui.Components.blur3.source.BlurredBackgroundSourceColor;
 import org.telegram.ui.Components.blur3.source.BlurredBackgroundSourceRenderNode;
 import org.telegram.ui.Components.chat.ViewPositionWatcher;
 import org.telegram.ui.Components.glass.GlassTabView;
+import com.exteragram.messenger.feed.FeedController;
 import com.exteragram.messenger.feed.ui.FeedActivity;
 import org.telegram.ui.Stories.recorder.HintView2;
 import org.telegram.ui.Wallet.WalletActivity;
@@ -412,6 +413,14 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
             tabs[INDEX_CHATS].setCounter(unreadCountFmt, false, animated);
         } else {
             tabs[INDEX_CHATS].setCounter(null, false, animated);
+        }
+
+        FeedController feedController = FeedController.peekInstance(currentAccount);
+        int feedUnreadCount = feedController != null ? feedController.getUnreadCount() : 0;
+        if (feedUnreadCount > 0) {
+            tabs[INDEX_FEED].setCounter(LocaleController.formatNumber(feedUnreadCount, ','), false, animated);
+        } else {
+            tabs[INDEX_FEED].setCounter(null, false, animated);
         }
     }
 
