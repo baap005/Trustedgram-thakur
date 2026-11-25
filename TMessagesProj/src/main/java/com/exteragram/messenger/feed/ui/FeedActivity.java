@@ -295,7 +295,7 @@ public class FeedActivity extends BaseFragment implements NotificationCenter.Not
         if (controller == null || listView == null) return;
         updateCategoryTabs();
         adapter.notifyDataSetChanged();
-        if (!loadingRequested && controller.getMessages().isEmpty()) {
+        if (!loadingRequested && controller.getStore().getVisibleMessages().isEmpty()) {
             loadingRequested = true;
             controller.loadInitial(classGuid, loadIndex++);
         }
