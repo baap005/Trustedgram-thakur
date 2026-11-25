@@ -40,6 +40,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ChatActivity;
+import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.MainTabsActivity;
 import org.telegram.ui.Components.LayoutHelper;
 
@@ -303,20 +304,61 @@ public class FeedActivity extends BaseFragment implements NotificationCenter.Not
         presentFragment(new ChatActivity(args));
     }
 
+    private void showPostActions(MessageObject message) {
+        ArrayList<String> actions = new ArrayList<>();
+        actions.add("Open in chat");
+        String postText = message.messageOwner != null && message.messageOwner.message != null ? message.messageOwner.message : "";
+        if (!postText.isEmpty()) actions.add("Copy text");
+        TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat((int) -message.getDialogId());
+        String publicLink = FeedPostActions.getPublicPostLink(chat, message.getRealId());
+        if (publicLink != null) actions.add("Copy link");
+        String[] items = actions.toArray(new String[0]);
+        new AlertDialog.Builder(getContext()).setItems(items, (dialog, which) -> {
+            String action = items[which];
+            if ("Open in chat".equals(action)) {
+                openMessage(message);
+            } else if ("Copy text".equals(action)) {
+                ClipboardManager clipboard = (ClipboardManager) getContext().getSystemService(Context.CLIPBOARD_SERVICE);
+                if (clipboard != null) clipboard.setPrimaryClip(ClipData.newPlainText("Feed post", postText));
+            } else if ("Copy link".equals(action) && publicLink != null) {
+                ClipboardManager clipboard = (ClipboardManager) getContext().getSystemService(Context.CLIPBOARD_SERVICE);
+                if (clipboard != null) clipboard.setPrimaryClip(ClipData.newPlainText("Feed post link", publicLink));
+            }
+        }).show();
+    }
+
     private final class FeedAdapter extends RecyclerView.Adapter<FeedHolder> {
         private final Context context;
         FeedAdapter(Context context) { this.context = context; }
 
         @NonNull
         @Override
+        @NonNull
+        @Override
         public FeedHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-            TextView text = new TextView(context);
-            text.setTextSize(15);
-            text.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-            text.setPadding(dp(16), dp(14), dp(16), dp(14));
-            text.setBackground(Theme.createRoundRectDrawable(dp(18), Theme.getColor(Theme.key_windowBackgroundWhite)));
-            text.setGravity(Gravity.START);
-            return new FeedHolder(text);
+            ChatMessageCell cell = new ChatMessageCell(context, currentAccount);
+            cell.setResourcesProvider(getResourceProvider());
+            cell.shouldCheckVisibleOnScreen = false;
+            cell.setDelegate(new ChatMessageCell.ChatMessageCellDelegate() {
+                @Override
+                public void didLongPress(ChatMessageCell pressedCell, float x, float y) {
+                    MessageObject message = pressedCell.getMessageObject();
+                    if (message != null) showPostActions(message);
+                }
+
+                @Override
+                public void didPressChannelAvatar(ChatMessageCell pressedCell, TLRPC.Chat chat, int postId, float touchX, float touchY, boolean asForward) {
+                    MessageObject message = pressedCell.getMessageObject();
+                    if (message != null) openMessage(message);
+                }
+
+                @Override
+                public void didPressOther(ChatMessageCell pressedCell, float otherX, float otherY) {
+                    MessageObject message = pressedCell.getMessageObject();
+                    if (message != null) openMessage(message);
+                }
+            });
+            return new FeedHolder(cell);
         }
 
         @Override
@@ -324,27 +366,7 @@ public class FeedActivity extends BaseFragment implements NotificationCenter.Not
             ArrayList<MessageObject> messages = controller.getStore().getVisibleMessages();
             if (position < 0 || position >= messages.size()) return;
             MessageObject message = messages.get(position);
-            TLRPC.Chat channel = MessagesController.getInstance(currentAccount).getChat((int) -message.getDialogId());
-            String channelName = channel != null ? channel.title : "Channel";
-            CharSequence body = message.messageOwner != null && message.messageOwner.message != null ? message.messageOwner.message : "";
-            if (body == null || body.length() == 0) body = "Media post";
-            holder.text.setText(channelName + "\n\n" + body);
-            holder.text.setOnClickListener(v -> openMessage(message));
-            holder.text.setOnLongClickListener(v -> {
-                new AlertDialog.Builder(getContext())
-                        .setItems(new String[]{"Open in chat", "Copy text"}, (dialog, which) -> {
-                            if (which == 0) {
-                                openMessage(message);
-                            } else {
-                                ClipboardManager clipboard = (ClipboardManager) getContext().getSystemService(Context.CLIPBOARD_SERVICE);
-                                if (clipboard != null) {
-                                    clipboard.setPrimaryClip(ClipData.newPlainText("Feed post", message.messageOwner != null && message.messageOwner.message != null ? message.messageOwner.message : ""));
-                                }
-                            }
-                        })
-                        .show();
-                return true;
-            });
+            holder.cell.setMessageObject(message, null, true, true, false);
         }
 
         @Override
@@ -354,10 +376,10 @@ public class FeedActivity extends BaseFragment implements NotificationCenter.Not
     }
 
     private static final class FeedHolder extends RecyclerView.ViewHolder {
-        final TextView text;
-        FeedHolder(@NonNull View itemView) {
+        final ChatMessageCell cell;
+        FeedHolder(@NonNull ChatMessageCell itemView) {
             super(itemView);
-            text = (TextView) itemView;
+            cell = itemView;
         }
     }
 }
