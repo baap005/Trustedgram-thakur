@@ -357,6 +357,30 @@ public class FeedActivity extends BaseFragment implements NotificationCenter.Not
                     MessageObject message = pressedCell.getMessageObject();
                     if (message != null) openMessage(message);
                 }
+
+                @Override
+                public void didPressImage(ChatMessageCell pressedCell, float x, float y, boolean fullPreview) {
+                    MessageObject message = pressedCell.getMessageObject();
+                    if (message != null) openMessage(message);
+                }
+
+                @Override
+                public void didPressReaction(ChatMessageCell pressedCell, TLRPC.ReactionCount reaction, boolean longpress, float x, float y) {
+                    MessageObject message = pressedCell.getMessageObject();
+                    if (message != null) openMessage(message);
+                }
+
+                @Override
+                public void didPressVoteButtons(ChatMessageCell pressedCell, ArrayList<TLRPC.PollAnswer> buttons, int showCount, int x, int y) {
+                    MessageObject message = pressedCell.getMessageObject();
+                    if (message != null) openMessage(message);
+                }
+
+                @Override
+                public void didPressReplyMessage(ChatMessageCell pressedCell, int id, float x, float y, boolean longpress) {
+                    MessageObject message = pressedCell.getMessageObject();
+                    if (message != null) openMessage(message);
+                }
             });
             return new FeedHolder(cell);
         }
