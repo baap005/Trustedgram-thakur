@@ -312,7 +312,7 @@ public class FeedActivity extends BaseFragment implements NotificationCenter.Not
         public FeedHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
             TextView text = new TextView(context);
             text.setTextSize(15);
-            text.setTextColor(Theme.getColor(Theme.key_windowTextBlack));
+            text.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
             text.setPadding(dp(16), dp(14), dp(16), dp(14));
             text.setBackground(Theme.createRoundRectDrawable(dp(18), Theme.getColor(Theme.key_windowBackgroundWhite)));
             text.setGravity(Gravity.START);
@@ -338,7 +338,7 @@ public class FeedActivity extends BaseFragment implements NotificationCenter.Not
                             } else {
                                 ClipboardManager clipboard = (ClipboardManager) getContext().getSystemService(Context.CLIPBOARD_SERVICE);
                                 if (clipboard != null) {
-                                    clipboard.setPrimaryClip(ClipData.newPlainText("Feed post", message.messageOwner != null ? message.messageOwner.message : ""));
+                                    clipboard.setPrimaryClip(ClipData.newPlainText("Feed post", message.messageOwner != null && message.messageOwner.message != null ? message.messageOwner.message : ""));
                                 }
                             }
                         })
