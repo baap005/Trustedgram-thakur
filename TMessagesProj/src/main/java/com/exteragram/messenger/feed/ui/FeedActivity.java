@@ -14,6 +14,7 @@ import android.content.ClipboardManager;
 import android.app.AlertDialog;
 import android.graphics.Typeface;
 import android.os.Bundle;
+import android.text.style.URLSpan;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -37,6 +38,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
+import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
@@ -375,6 +377,13 @@ public class FeedActivity extends BaseFragment implements NotificationCenter.Not
                 public void didPressOther(ChatMessageCell pressedCell, float otherX, float otherY) {
                     MessageObject message = pressedCell.getMessageObject();
                     if (message != null) openMessage(message);
+                }
+
+                @Override
+                public void didPressUrl(ChatMessageCell pressedCell, android.text.CharacterStyle url, boolean longPress) {
+                    if (!longPress && url instanceof URLSpan) {
+                        Browser.openUrl(getContext(), ((URLSpan) url).getURL());
+                    }
                 }
 
                 @Override
