@@ -252,17 +252,40 @@ public class FeedActivity extends BaseFragment implements NotificationCenter.Not
         });
         if (categoryId > 0) {
             button.setOnLongClickListener(v -> {
+                FeedConfig config = FeedConfig.getInstance(currentAccount);
+                FeedConfig.Category category = config.getCategory(categoryId);
+                if (category == null) return true;
                 new AlertDialog.Builder(getContext())
-                        .setTitle("Delete category?")
-                        .setMessage("This removes the category only. Your channel subscriptions stay unchanged.")
-                        .setNegativeButton("Cancel", null)
-                        .setPositiveButton("Delete", (dialog, which) -> {
-                            FeedConfig.getInstance(currentAccount).deleteCategory(categoryId);
-                            controller.applyConfigChange(null);
-                            updateCategoryTabs();
-                            refresh();
-                        })
-                        .show();
+                        .setItems(new String[]{"Rename category", "Manage channels", "Delete category"}, (dialog, which) -> {
+                            if (which == 0) {
+                                EditText input = new EditText(getContext());
+                                input.setSingleLine(true);
+                                input.setText(category.getTitle());
+                                input.setSelection(input.length());
+                                new AlertDialog.Builder(getContext()).setTitle("Rename category").setView(input)
+                                        .setNegativeButton("Cancel", null)
+                                        .setPositiveButton("Save", (d, w) -> {
+                                            String name = input.getText().toString().trim();
+                                            if (name.isEmpty()) return;
+                                            config.saveCategory(category.getId(), name, category.getEmojiId(), category.getChannels());
+                                            controller.applyConfigChange(null);
+                                            updateCategoryTabs();
+                                            refresh();
+                                        }).show();
+                            } else if (which == 1) {
+                                presentFragment(new FeedChannelsActivity());
+                            } else {
+                                new AlertDialog.Builder(getContext()).setTitle("Delete category?")
+                                        .setMessage("This removes the category only. Your channel subscriptions stay unchanged.")
+                                        .setNegativeButton("Cancel", null)
+                                        .setPositiveButton("Delete", (d, w) -> {
+                                            config.deleteCategory(categoryId);
+                                            controller.applyConfigChange(null);
+                                            updateCategoryTabs();
+                                            refresh();
+                                        }).show();
+                            }
+                        }).show();
                 return true;
             });
         }
