@@ -32,6 +32,7 @@ import com.exteragram.messenger.feed.FeedController;
 import com.exteragram.messenger.feed.FeedConfig;
 
 import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.ChatMessageSharedResources;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
@@ -53,6 +54,7 @@ import java.util.ArrayList;
 public class FeedActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, MainTabsActivity.TabFragmentDelegate {
 
     private FeedController controller;
+    private ChatMessageSharedResources sharedResources;
     private RecyclerView listView;
     private LinearLayout categoryStrip;
     private FeedAdapter adapter;
@@ -79,6 +81,7 @@ public class FeedActivity extends BaseFragment implements NotificationCenter.Not
     public boolean onFragmentCreate() {
         controller = FeedController.getInstance(currentAccount);
         controller.activateSelectedTimeline();
+        sharedResources = new ChatMessageSharedResources(context);
         classGuid = org.telegram.tgnet.ConnectionsManager.generateClassGuid();
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.feedNeedReload);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.messagesDidLoad);
@@ -352,7 +355,7 @@ public class FeedActivity extends BaseFragment implements NotificationCenter.Not
         @NonNull
         @Override
         public FeedHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-            ChatMessageCell cell = new ChatMessageCell(context, currentAccount);
+            ChatMessageCell cell = new ChatMessageCell(context, currentAccount, true, sharedResources, getResourceProvider());
             cell.setResourcesProvider(getResourceProvider());
             cell.shouldCheckVisibleOnScreen = false;
             cell.setDelegate(new ChatMessageCell.ChatMessageCellDelegate() {
